@@ -1,0 +1,86 @@
+{
+  "checkpoint_dir": "experiments/tinytcn/runs/fp32_100hz",
+  "params": 10948,
+  "points": [
+    {
+      "name": "FP32",
+      "size_kb": 42.77,
+      "macro_f1": 0.91,
+      "accuracy": 0.9608074529353481,
+      "phase_f1": {
+        "LR": 0.86,
+        "LS": 0.98,
+        "PSw": 0.83,
+        "Sw": 0.97
+      },
+      "phase_accuracy": {
+        "LR": 0.9732362342241407,
+        "LS": 0.965599031462559,
+        "PSw": 0.9230238496610688,
+        "Sw": 0.9581711096053821
+      },
+      "phase_support": {
+        "LR": 151735,
+        "LS": 1274499,
+        "PSw": 140589,
+        "Sw": 1016857
+      },
+      "params": 10948,
+      "note": "full-precision weights",
+      "artifact": null,
+      "measured": true
+    },
+    {
+      "name": "INT8",
+      "size_kb": 12.69,
+      "macro_f1": null,
+      "accuracy": null,
+      "phase_f1": null,
+      "phase_accuracy": null,
+      "phase_support": null,
+      "params": 10948,
+      "note": "post-training INT8",
+      "artifact": null,
+      "measured": false
+    },
+    {
+      "name": "INT4",
+      "size_kb": 7.35,
+      "macro_f1": null,
+      "accuracy": null,
+      "phase_f1": null,
+      "phase_accuracy": null,
+      "phase_support": null,
+      "params": 10948,
+      "note": "4-bit quantization",
+      "artifact": null,
+      "measured": false
+    },
+    {
+      "name": "Prune50",
+      "size_kb": 21.38,
+      "macro_f1": null,
+      "accuracy": null,
+      "phase_f1": null,
+      "phase_accuracy": null,
+      "phase_support": null,
+      "params": 5474,
+      "note": "50% channel prune",
+      "artifact": null,
+      "measured": false
+    },
+    {
+      "name": "INT8+Prune50",
+      "size_kb": 6.35,
+      "macro_f1": null,
+      "accuracy": null,
+      "phase_f1": null,
+      "phase_accuracy": null,
+      "phase_support": null,
+      "params": 5474,
+      "note": "INT8 after prune",
+      "artifact": null,
+      "measured": false
+    }
+  ]
+}

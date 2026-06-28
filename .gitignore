@@ -1,0 +1,31 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.pytest_cache/
+.matplotlib-cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local data and large model artifacts.
+dataset/Xy
+experiments/**/runs/**/*.pt
+experiments/compression/runs/
+
+# Generated analysis artifacts that can be regenerated.
+experiments/compression/results/
+experiments/compression/phase_degradation.json
+
+# LaTeX build outputs.
+paper/*.aux
+paper/*.bbl
+paper/*.bcf
+paper/*.blg
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.log
+paper/*.out
+paper/*.run.xml
+paper/*.synctex.gz
+paper/*.toc

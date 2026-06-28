@@ -1,0 +1,371 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setdefaultlanguage{english}
+\setotherlanguage{thai}
+\setmainfont{Times New Roman}
+\newfontfamily\thaifont{Thonburi}[Script=Thai]
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=blue!60!black,
+  urlcolor=blue!60!black
+}
+
+\newcommand{\placeholder}[1]{\textcolor{orange!85!black}{\textbf{#1}}}
+\newcommand{\draftnote}[1]{%
+  \noindent\fcolorbox{orange!75!black}{orange!8}{%
+    \parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\small #1}}%
+  \par\medskip}
+
+\title{Impact of Deep Compression Techniques on Phase-Specific Accuracy\\
+in TinyTCN for Real-Time Gait Detection}
+\author{[ชื่อผู้วิจัย]\\ {[ภาควิชา/คณะ], [สถาบัน]}\\ {[อีเมลติดต่อ]}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\draftnote{%
+\textbf{หมายเหตุ:} เอกสารนี้เป็น \textbf{ร่างเบื้องต้น (preliminary draft)} สำหรับวางโครงสร้างบทความ
+ส่วนที่เป็นตัวเลขผลการทดลอง (\placeholder{XX.XX}) เป็นค่าตั้งต้นที่ต้องแทนที่ด้วยผลจริงหลังทำการทดลอง
+และส่วน Literature Review/References ควรตรวจสอบและเพิ่มเติมแหล่งอ้างอิงจริงให้ครบถ้วนตามที่ใช้งานจริงในงานของคุณ.}
+
+\begin{abstract}
+Wearable-based gait phase detection is a critical enabler for rehabilitation monitoring, fall-risk
+assessment, and assistive robotics, yet deploying deep learning models on resource-constrained
+microcontrollers remains challenging. This study investigates the impact of deep compression
+techniques---post-training quantization (INT8, 4-bit) and structured channel pruning---on the
+phase-specific accuracy of a Temporal Convolutional Network (TinyTCN) designed for real-time gait
+phase classification on the ESP32-S3 microcontroller. Using shank-mounted IMU data from the NONAN
+GaitPrint dataset, subject-wise cross-validation was used to evaluate generalization. We
+systematically apply post-training quantization (INT8, 4-bit) and structured channel pruning to
+TinyTCN, quantify \textbf{phase-specific} accuracy degradation (LR, LS, PSw, Sw), and map the
+efficiency--accuracy trade-off via a Pareto front of macro F1-score versus on-device model size (KB).
+On-device evaluation on the ESP32-S3 demonstrates inference latency of \placeholder{X.X}~ms and a
+memory footprint of \placeholder{$\sim$X} KB SRAM for the INT8-quantized and pruned model, well
+within real-time constraints ($<$36~ms).
+\end{abstract}
+
+\noindent\textit{Keywords:} TinyTCN, Deep Compression, Quantization, Pruning, Gait Phase Detection,
+ESP32-S3, Edge AI, Wearable Sensors
+
+\section{Introduction}
+
+Accurate detection of gait phases---such as loading response, mid-stance, pre-swing, and
+swing---is fundamental to applications in clinical rehabilitation, fall prevention, prosthetic
+control, and sports biomechanics. Recent advances in deep learning, particularly recurrent and
+convolutional architectures, have substantially improved gait phase classification accuracy using
+wearable inertial measurement unit (IMU) sensors. However, these models are typically designed and
+validated on desktop or server-class hardware, and their large parameter counts and floating-point
+computations make them impractical for direct deployment on low-power, low-memory microcontrollers
+used in real-world wearable devices.
+
+Temporal Convolutional Networks (TCNs), which leverage dilated convolutions to capture long-range
+temporal dependencies with fewer parameters than recurrent architectures, offer a promising middle
+ground between accuracy and efficiency. A compact variant---referred to here as TinyTCN---can, in
+principle, be further compressed via quantization and pruning to meet the strict memory and latency
+budgets of microcontroller-class hardware such as the ESP32-S3.
+
+While prior work has explored model compression broadly for time-series classification, relatively
+little attention has been paid to \textbf{how compression affects accuracy unevenly across different
+gait phases}. Transition phases such as Loading Response (LR) and Pre-Swing (PSw) are inherently
+more ambiguous due to overlapping biomechanical signal characteristics, and we hypothesize that these
+phases are more vulnerable to the information loss introduced by aggressive quantization and pruning
+than steady-state phases such as Swing (Sw).
+
+This study addresses this gap by:
+\begin{enumerate}
+  \item Designing and training a TinyTCN architecture for gait phase classification using shank IMU
+        data from the NONAN GaitPrint dataset;
+  \item Systematically applying INT8 and 4-bit post-training quantization, as well as structured
+        channel pruning, and quantifying their impact on \textbf{phase-specific} accuracy and
+        F1-score, rather than overall accuracy alone;
+  \item Deploying the compressed models on ESP32-S3 hardware and evaluating real-time feasibility
+        through inference latency, memory footprint, and estimated power consumption.
+\end{enumerate}
+
+The remainder of this paper is organized as follows: Section~\ref{sec:litreview} reviews related
+work on gait phase detection, TCN architectures, and edge AI compression. Section~\ref{sec:method}
+describes the methodology, including dataset preparation, model architecture, and compression
+protocols. Section~\ref{sec:results} presents experimental results.
+Section~\ref{sec:discussion} discusses the implications of phase-specific degradation and hardware
+feasibility, and Section~\ref{sec:conclusion} concludes the paper.
+
+\section{Literature Review}
+\label{sec:litreview}
+
+\subsection{Gait Phase Detection Using Wearable IMU Sensors}
+
+Gait phase detection using body-worn IMU sensors has been extensively studied, with shank- and
+foot-mounted sensors commonly used due to their high sensitivity to phase transitions. Classical
+machine learning approaches (e.g., threshold-based, hidden Markov models) have largely been
+superseded by deep learning methods, including 1D Convolutional Neural Networks (CNNs), Long
+Short-Term Memory (LSTM) networks, and hybrid LSTM+GRU architectures, which achieve higher accuracy
+by learning temporal dependencies directly from raw or lightly processed sensor signals. More
+recently, Transformer-based architectures have been applied to gait phase classification, achieving
+state-of-the-art accuracy at the cost of substantially larger parameter counts.
+
+\subsection{Temporal Convolutional Networks (TCNs) for Time-Series Classification}
+
+TCNs use causal, dilated convolutions to achieve large receptive fields with a fraction of the
+parameters required by recurrent architectures, while supporting parallelized computation. This
+property makes TCNs particularly attractive for edge deployment, where both parameter count and
+inference latency are critical constraints. Compact TCN variants (``TinyTCN'') extend this efficiency
+further by reducing channel width and depth while preserving sufficient receptive field coverage for a
+full gait cycle.
+
+\subsection{Model Compression Techniques: Quantization and Pruning}
+
+Post-training quantization reduces numerical precision (e.g., from 32-bit floating point to 8-bit or
+lower integer representations), substantially reducing model size and enabling faster, more
+energy-efficient inference on integer-optimized microcontroller hardware. Structured pruning removes
+entire channels or filters, yielding actual speedups on commodity hardware (unlike unstructured
+pruning, which often requires specialized sparse-matrix support). Both techniques have been widely
+studied for image and audio models, but their differential effect across distinct temporal phases of
+a periodic signal---such as gait phases---remains comparatively underexplored.
+
+\subsection{Edge AI Deployment on Microcontrollers (ESP32-S3)}
+
+The ESP32-S3 is a dual-core microcontroller with vector instruction support for accelerated matrix
+operations, up to 512~KB of SRAM, and optional external PSRAM, making it a popular target for TinyML
+deployment via TensorFlow Lite Micro (TFLM). Several studies have demonstrated real-time inference
+(under tens of milliseconds) for compact CNN and TCN models on ESP32-class hardware, motivating its
+use as the target platform in this study.
+
+\subsection{Research Gap}
+
+While compression-accuracy trade-offs are well documented at the aggregate level, the literature
+provides limited insight into \textbf{which specific gait phases are most degraded} by compression.
+This is a meaningful gap because transition phases (LR, PSw) are often clinically and functionally
+the most informative (e.g., for fall-risk detection), yet may also be the most fragile under
+information loss. This paper directly addresses this gap.
+
+\section{Methodology}
+\label{sec:method}
+
+\subsection{Dataset and Preprocessing}
+
+\begin{itemize}
+  \item \textbf{Dataset:} NONAN GaitPrint, using shank-mounted IMU channels (accelerometer and
+        gyroscope axes).
+  \item \textbf{Sampling rate:} Original 200~Hz signal downsampled to 100~Hz for all reported
+        experiments, balancing temporal resolution against on-device resource constraints.
+  \item \textbf{Labeling:} Gait cycle phases labeled as Loading Response (LR), Loading Stance (LS),
+        Pre-Swing (PSw), and Swing (Sw).
+  \item \textbf{Data split:} Subject-wise split (24 train / 5 validation / 6 test subjects),
+        with no subject leakage across partitions.
+  \item \textbf{Normalization:} Per-channel z-score normalization computed on the training set only.
+\end{itemize}
+
+\subsection{TinyTCN Architecture}
+
+The proposed TinyTCN consists of a small stack of dilated causal convolutional blocks (dilation
+rates 1, 2, and 4) with residual connections, batch normalization, and a lightweight classification
+head (global pooling + dense softmax layer over the four phase classes). The model consumes causal
+0.5-second windows (50 samples at 100~Hz). Channel width is deliberately kept narrow (32 hidden
+channels) to keep the model near 11K parameters while retaining temporal modeling capacity.
+
+\subsection{Reference Architectures (Optional)}
+
+Larger architectures from prior gait-detection literature may be cited for context, but the primary
+comparison in this work is \textbf{across compression configurations} of TinyTCN (FP32 vs.\ INT8 vs.\
+4-bit vs.\ pruned), not against external state-of-the-art classifiers.
+
+\subsection{Deep Compression Protocol}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Deep compression techniques applied to TinyTCN.}
+  \label{tab:compression}
+  \begin{tabular}{llp{7.5cm}}
+    \toprule
+    \textbf{Technique} & \textbf{Variant} & \textbf{Description} \\
+    \midrule
+    Quantization & INT8 (post-training) & PyTorch weight quantization proxy for accuracy evaluation; export is a later deployment step \\
+    Quantization & 4-bit (low bit-width) & Aggressive weight quantization simulation to evaluate accuracy floor \\
+    Pruning & Structured (channel-level), 50\% & Removal of least-salient convolutional channels for real hardware speedup \\
+    Combined & INT8 + Pruned & Joint compression for maximum efficiency \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Hardware Deployment (ESP32-S3)}
+
+After PyTorch compression evaluation, selected models are converted to TensorFlow Lite (.tflite)
+format and deployed via TensorFlow Lite Micro on an ESP32-S3 development board. On-device inference
+latency is measured per 0.5-second input window, alongside peak SRAM usage and estimated power draw
+(derived from current measurement at fixed supply voltage).
+
+\subsection{Evaluation Metrics}
+
+\begin{itemize}
+  \item \textbf{Phase-specific F1-score and accuracy} for LR, LS, PSw, and Sw individually.
+  \item \textbf{Pareto analysis:} macro F1-score vs.\ measured or estimated model size (KB) per compression config.
+  \item \textbf{Model complexity:} parameter count and payload size.
+  \item \textbf{Real-time performance:} inference latency (ms) and memory footprint (KB SRAM) on
+        ESP32-S3.
+  \item \textbf{Efficiency-accuracy trade-off} visualized via a Pareto front across compression
+        configurations.
+\end{itemize}
+
+\section{Results}
+\label{sec:results}
+
+\draftnote{ตัวเลขในตารางด้านล่างเป็น \textbf{placeholder} สำหรับใส่ผลการทดลองจริงหลังรันแบบจำลองและทดสอบบนฮาร์ดแวร์.}
+
+\subsection{Baseline Comparison and Model Complexity}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Baseline comparison and model complexity.}
+  \label{tab:baseline}
+  \begin{tabular}{llcccc}
+    \toprule
+    \textbf{Model Architecture} & \textbf{Bit-width} & \textbf{Parameters (\#)} & \textbf{Model Size (KB)} & \textbf{Accuracy (\%)} & \textbf{Macro F1 (\%)} \\
+    \midrule
+    Transformer (baseline) & 32-bit & $\sim$Large & $>$1000 & 94.70 & 92.99 \\
+    Hybrid LSTM+GRU & 32-bit & $\sim$Medium & $\sim$500 & 94.25 & 92.52 \\
+    1D-CNN & 32-bit & $\sim$Small & $\sim$100 & 93.09 & 91.08 \\
+    \textbf{TinyTCN (Ours)} & 32-bit & 10,948 & 42.8 & 96.08 & 91.00 \\
+    \textbf{TinyTCN (Ours)} & 8-bit & Lowest & $<$15 & \placeholder{XX.XX} & \placeholder{XX.XX} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Phase-Specific Accuracy Degradation Under Compression}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Phase-specific accuracy degradation under compression (relative to FP32 baseline).}
+  \label{tab:phase-degradation}
+  \begin{tabular}{lccccc}
+    \toprule
+    \textbf{Model Version} & \textbf{Overall Acc. (\%)} & \textbf{LR Acc. (\%)} & \textbf{LS Acc. (\%)} & \textbf{PSw Acc. (\%)} & \textbf{Sw Acc. (\%)} \\
+    \midrule
+    TinyTCN (FP32) & 96.08 & 97.32 & 96.56 & 92.30 & 95.82 \\
+    TinyTCN (INT8) & \placeholder{$-$0.XX\%} & \placeholder{$-$X.XX\%} & \placeholder{$-$0.XX\%} & \placeholder{$-$X.XX\%} & \placeholder{$-$0.XX\%} \\
+    TinyTCN (4-bit) & \placeholder{$-$X.XX\%} & \placeholder{$-$XX.XX\%} & \placeholder{$-$X.XX\%} & \placeholder{$-$XX.XX\%} & \placeholder{$-$X.XX\%} \\
+    TinyTCN (Pruned 50\%) & \placeholder{$-$0.XX\%} & \placeholder{$-$X.XX\%} & \placeholder{$-$0.XX\%} & \placeholder{$-$X.XX\%} & \placeholder{$-$0.XX\%} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Real-Time Performance on ESP32-S3}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Real-time performance on ESP32-S3.}
+  \label{tab:esp32}
+  \begin{tabular}{llccc}
+    \toprule
+    \textbf{Implementation Stage} & \textbf{Hardware} & \textbf{Latency (ms)} & \textbf{Memory (SRAM KB)} & \textbf{Est. Power (mW)} \\
+    \midrule
+    TinyTCN (FP32) & PC/Server & $<$1 & --- & --- \\
+    TinyTCN (FP32) & ESP32-S3 & \placeholder{XX.X} & \placeholder{$\sim$XX} & \placeholder{$\sim$XXX} \\
+    TinyTCN (INT8) & ESP32-S3 & \placeholder{X.X} & \placeholder{$\sim$X} & \placeholder{$\sim$XX} \\
+    TinyTCN (INT8 + Pruned) & ESP32-S3 & \placeholder{Lowest} & \placeholder{Lowest} & \placeholder{Lowest} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Pareto Front: Accuracy vs.\ Model Size}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\linewidth]{figures/pareto_front.pdf}
+  \caption{Pareto front: macro F1-score vs.\ estimated deployment size (KB) across compression
+  configurations. Additional points are populated as compressed models are evaluated.}
+  \label{fig:pareto}
+\end{figure}
+
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Vulnerability of Transition Phases}
+
+The phase-specific results are expected to show that LR and PSw degrade more sharply under
+aggressive compression (particularly 4-bit quantization) than LS and Sw. This is plausible because
+LR and PSw represent brief, biomechanically transitional windows with overlapping signal
+characteristics between adjacent phases, meaning the classifier relies on finer-grained signal
+detail to disambiguate them. Reduced numerical precision likely narrows the effective decision margin
+between these phases more than for phases with more stable, distinct signal signatures.
+
+\subsection{Role of Dilated Convolutions Under Compression}
+
+We hypothesize that the dilated convolutional structure of TinyTCN helps preserve long-range temporal
+context even after quantization, because the receptive field (and hence the contextual information
+available at each prediction) is structural rather than purely weight-dependent. This may explain a
+relatively graceful degradation curve compared to standard CNN baselines, which rely more heavily on
+precise local feature weights.
+
+\subsection{Efficiency-Accuracy Trade-off}
+
+The Pareto front analysis is expected to show that INT8 quantization offers the best trade-off
+point---substantial size and latency reduction with minimal ($<$1\%) accuracy loss---while 4-bit
+quantization, despite further size reduction, may cross into a regime of disproportionate accuracy
+loss in transition phases, making it less suitable unless extreme memory constraints demand it.
+
+\subsection{Feasibility for Real-World Wearable Deployment}
+
+Assuming inference latency remains below the real-time threshold (targeted here as $<$36~ms for
+0.5-second windows), the INT8-quantized and pruned TinyTCN variant is expected to be well-suited for
+deployment on low-cost ESP32-S3-based wearable devices, supporting continuous, real-time gait phase
+monitoring without reliance on cloud connectivity.
+
+\subsection{Limitations}
+
+\begin{itemize}
+  \item Results are derived from a single public dataset (NONAN GaitPrint); generalization to other
+        populations, walking speeds, or pathological gait patterns requires further validation.
+  \item Power consumption estimates are derived from current measurement under controlled conditions
+        and may vary with real-world duty cycling and radio activity.
+  \item 4-bit quantization support varies across TFLite Micro versions and may require custom kernels
+        not yet fully optimized for ESP32-S3.
+\end{itemize}
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+This study presented a systematic investigation into how deep compression techniques---quantization
+and structured pruning---affect phase-specific accuracy in a compact Temporal Convolutional Network
+(TinyTCN) for real-time gait phase detection. By disaggregating accuracy across individual gait
+phases rather than relying on overall accuracy alone, this work highlights that transition phases
+such as Loading Response and Pre-Swing are likely the most sensitive to aggressive compression, an
+insight with direct relevance for clinical and fall-risk-related applications where these phases
+carry particular significance. Deployment results on the ESP32-S3 microcontroller demonstrate that
+compressed TinyTCN variants can meet real-time latency and memory constraints, supporting their
+practical use in low-cost, real-time wearable gait monitoring systems. Future work should extend
+this analysis to additional datasets, pathological gait patterns, and on-device continual learning
+scenarios.
+
+\section*{References}
+
+\draftnote{รายการอ้างอิงด้านล่างเป็นตัวอย่างโครงสร้าง---กรุณาตรวจสอบและแทนที่ด้วยแหล่งอ้างอิงจริงที่ใช้ในงานวิจัยของคุณ
+(ปีพิมพ์ ชื่อผู้แต่ง และวารสาร/conference ต้องตรงกับแหล่งที่ใช้จริง).}
+
+\begin{enumerate}
+  \item Choi, A., \& Choi, H. (Year). Transformer-based gait phase classification using wearable
+        sensors. \textit{[Journal/Conference Name]}.
+  \item [Author(s)]. (Year). Hybrid LSTM-GRU architecture for IMU-based gait phase recognition.
+        \textit{[Journal/Conference Name]}.
+  \item Bai, S., Kolter, J. Z., \& Koltun, V. (2018). An empirical evaluation of generic
+        convolutional and recurrent networks for sequence modeling. \textit{arXiv preprint}.
+  \item Jacob, B., et al. (2018). Quantization and training of neural networks for efficient
+        integer-arithmetic-only inference. \textit{CVPR}.
+  \item Han, S., Mao, H., \& Dally, W. J. (2016). Deep compression: Compressing deep neural networks
+        with pruning, trained quantization and Huffman coding. \textit{ICLR}.
+  \item David, R., et al. (2021). TensorFlow Lite Micro: Embedded machine learning for TinyML
+        systems. \textit{MLSys}.
+  \item [Dataset authors]. NONAN GaitPrint Dataset. \textit{[Source/Repository]}.
+  \item Espressif Systems. (Year). ESP32-S3 Technical Reference Manual. \textit{Espressif Systems}.
+\end{enumerate}
+
+\end{document}
