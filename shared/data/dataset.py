@@ -279,7 +279,10 @@ def fit_norm_stats(
 ) -> NormStats:
     chunks: list[np.ndarray] = []
     for path in tqdm(train_files, desc="fit norm stats", unit="trial"):
-        x, _ = load_trial(path, feature_columns=feature_columns, decimate=decimate)
+        df = pd.read_csv(path, usecols=feature_columns)
+        x = _clean_imu(df.to_numpy(dtype=np.float32))
+        if decimate > 1:
+            x = x[::decimate]
         chunks.append(x)
     all_x = np.concatenate(chunks, axis=0)
     mean = np.nanmean(all_x, axis=0)
