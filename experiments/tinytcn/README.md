@@ -13,10 +13,10 @@ Current research contract:
 - labels: LR, LS, PSw, Sw
 
 ```bash
-bash scripts/train.sh
+bash scripts/train.sh --config shared/configs/train_fair_comparison.json
 ```
 
-Output: `runs/fp32_100hz/` (`best_model.pt`, `test_report.txt`)
+Output: `runs/fp32_100hz/` (`best_model.pt`, reports, metrics JSON)
 
 Uses `shared/splits/subject_split.csv`.
 

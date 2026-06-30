@@ -9,14 +9,14 @@
 
 ## Table 2 — FP32 classification (12 ch, 100 Hz)
 
-Source: `experiments/tinytcn/runs/fp32_100hz/test_report.txt` — macro F1 **0.91**
+Source: `experiments/<model>/runs/fp32_100hz/test_report.txt` after retraining with shared config.
 
-| Phase | F1 |
-|-------|-----|
-| LR | 0.86 |
-| LS | 0.98 |
-| PSw | 0.83 |
-| Sw | 0.97 |
+| Phase | TinyTCN F1 |
+|-------|------------|
+| LR | pending |
+| LS | pending |
+| PSw | pending |
+| Sw | pending |
 
 ## Table 3 — Compression vs phase F1
 
@@ -35,7 +35,7 @@ Primary sources:
 
 | Config | Size KB | Macro F1 | LR | LS | PSw | Sw |
 |--------|---------|----------|----|----|-----|-----|
-| FP32 | 42.8 | 0.91 | ✓ | ✓ | ✓ | ✓ |
+| FP32 | 42.8 | pending | pending | pending | pending | pending |
 | INT8 | 12.7 estimate until run | pending | pending | pending | pending | pending |
 | INT4 | 7.3 estimate until run | pending | pending | pending | pending | pending |
 | Prune50 | 21.4 estimate until run | pending | pending | pending | pending | pending |

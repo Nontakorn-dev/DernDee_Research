@@ -15,13 +15,23 @@ The fixed split is `shared/splits/subject_split.csv`:
 python shared/scripts/make_split.py
 ```
 
-## FP32 TinyTCN
+## FP32 model training (shared protocol)
+
+All models (`tinytcn`, `cnn1d`, `lstm_gru`, `tcn`, `transformer`) share:
 
 ```bash
-bash experiments/tinytcn/scripts/train.sh
+bash experiments/scripts/train_all_colab.sh \
+  --config shared/configs/train_fair_comparison.json
 ```
 
-Default training settings:
+Single model example:
+
+```bash
+bash experiments/tinytcn/scripts/train.sh \
+  --config shared/configs/train_fair_comparison.json
+```
+
+Default training settings (from `shared/configs/train_fair_comparison.json`):
 
 - channels: bilateral, 12 IMU inputs
 - source rate: 200 Hz

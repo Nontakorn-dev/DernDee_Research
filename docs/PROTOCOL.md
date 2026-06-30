@@ -52,15 +52,29 @@ The split lives at `shared/splits/subject_split.csv`. Regenerate only when inten
 python shared/scripts/make_split.py --seed 42
 ```
 
-## FP32 TinyTCN baseline
+## FP32 model training (shared protocol)
 
-Train:
+Canonical config: `shared/configs/train_fair_comparison.json`
+
+Train one model:
 
 ```bash
-bash experiments/tinytcn/scripts/train.sh
+bash experiments/tinytcn/scripts/train.sh \
+  --config shared/configs/train_fair_comparison.json
 ```
 
-Training defaults: 50 epochs, Adam lr=1e-3, batch size 512. The checkpoint with the best validation macro F1 is saved as `best_model.pt` (not necessarily the final epoch).
+Train all baselines:
+
+```bash
+bash experiments/scripts/train_all_colab.sh \
+  --config shared/configs/train_fair_comparison.json \
+  --lazy \
+  --device cuda
+```
+
+Colab guide: `docs/COLAB_TRAINING.md`
+
+Training defaults: 50 epochs, Adam lr=1e-3, batch size 512, balanced class weights. The checkpoint with the best validation macro F1 is saved as `best_model.pt` (not necessarily the final epoch). Target label for bilateral input is left-foot phase (`phase_lt`).
 
 Primary outputs:
 

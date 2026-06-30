@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Train TinyTCN with the shared fair-comparison protocol."""
+"""Train LSTM+GRU baseline with the shared fair-comparison protocol."""
 
 from __future__ import annotations
 
@@ -12,4 +12,4 @@ sys.path.insert(0, str(SHARED))
 from train_runner import main_for_model  # noqa: E402
 
 if __name__ == "__main__":
-    main_for_model("tinytcn", description=__doc__)
+    main_for_model("lstm_gru", description=__doc__)

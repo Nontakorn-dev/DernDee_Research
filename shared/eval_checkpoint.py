@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evaluate a TinyTCN checkpoint with structured, paper-ready metrics."""
+"""Evaluate a gait-phase checkpoint with structured, paper-ready metrics."""
 
 from __future__ import annotations
 
@@ -13,16 +13,14 @@ import torch
 from torch import nn
 
 RESEARCH_ROOT = Path(__file__).resolve().parents[1]
-TINYTCN_DIR = RESEARCH_ROOT / "experiments" / "tinytcn"
 sys.path.insert(0, str(RESEARCH_ROOT / "shared"))
-sys.path.insert(0, str(TINYTCN_DIR))
 
 from data.dataset import NormStats, probe_label_column  # noqa: E402
 from data.splits import files_for_split, load_split  # noqa: E402
 from evaluate import evaluate_single  # noqa: E402
 from gait_labels import IMU_CHANNEL_SETS  # noqa: E402
-from model import build_model  # noqa: E402
-from paths import DATA_XY, SHARED_SPLITS, TINYTCN_RUNS  # noqa: E402
+from model_registry import build_model_from_config  # noqa: E402
+from paths import DATA_XY, SHARED_SPLITS, experiment_runs  # noqa: E402
 from training import make_loader, pick_device  # noqa: E402
 
 
@@ -30,17 +28,34 @@ def load_checkpoint(checkpoint_path: Path) -> dict[str, Any]:
     if not checkpoint_path.exists():
         raise FileNotFoundError(
             f"Checkpoint not found: {checkpoint_path}. "
-            "Run bash experiments/tinytcn/scripts/train.sh first or pass --checkpoint."
+            "Train a model first or pass --checkpoint."
         )
     return torch.load(checkpoint_path, map_location="cpu", weights_only=False)
 
 
-def model_from_checkpoint(ckpt: dict[str, Any]) -> nn.Module:
+def _resolve_model_name(cfg: dict[str, Any], checkpoint_path: Path) -> str:
+    if "model_name" in cfg:
+        return str(cfg["model_name"])
+    # Backward compatibility with TinyTCN-only checkpoints.
+    if "tinytcn" in checkpoint_path.as_posix():
+        return "tinytcn"
+    raise KeyError(
+        "Checkpoint config missing model_name. Retrain with the shared train_runner "
+        "or pass a checkpoint produced by experiments/<model>/train.py."
+    )
+
+
+def model_from_checkpoint(ckpt: dict[str, Any], checkpoint_path: Path | None = None) -> nn.Module:
     cfg = ckpt["config"]
-    model = build_model(
+    model_name = _resolve_model_name(cfg, checkpoint_path or Path("unknown.pt"))
+    model_kwargs = dict(cfg.get("model_kwargs", {}))
+    model_kwargs.setdefault("n_classes", int(cfg.get("n_classes", 4)))
+    model_kwargs.setdefault("hidden", int(cfg.get("hidden", 32)))
+
+    model = build_model_from_config(
+        model_name,
         n_channels=int(cfg.get("n_channels", len(cfg["feature_columns"]))),
-        n_classes=int(cfg.get("n_classes", 4)),
-        hidden=int(cfg.get("hidden", 32)),
+        model_kwargs=model_kwargs,
     )
     model.load_state_dict(ckpt["model_state_dict"])
     return model
@@ -126,6 +141,7 @@ def evaluate_model_from_checkpoint_config(
     metrics["split"] = split
     metrics["windows"] = int(len(labels))
     metrics["checkpoint"] = str(checkpoint_path) if checkpoint_path else None
+    metrics["model_name"] = _resolve_model_name(ckpt["config"], checkpoint_path or Path("unknown.pt"))
     return metrics
 
 
@@ -142,7 +158,7 @@ def evaluate_checkpoint(
     cache_trials: int = 3,
 ) -> dict[str, Any]:
     ckpt = load_checkpoint(checkpoint_path)
-    model = model_from_checkpoint(ckpt)
+    model = model_from_checkpoint(ckpt, checkpoint_path)
     return evaluate_model_from_checkpoint_config(
         model,
         ckpt,
@@ -163,9 +179,14 @@ def write_metrics(metrics: dict[str, Any], output_path: Path) -> None:
     output_path.write_text(json.dumps(metrics, indent=2))
 
 
+def default_checkpoint_for(model_name: str) -> Path:
+    return experiment_runs(model_name) / "fp32_100hz" / "best_model.pt"
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--checkpoint", type=Path, default=TINYTCN_RUNS / "fp32_100hz" / "best_model.pt")
+    p.add_argument("--model", type=str, default="tinytcn", help="Model name for default checkpoint path.")
+    p.add_argument("--checkpoint", type=Path, default=None)
     p.add_argument("--data-root", type=Path, default=DATA_XY)
     p.add_argument("--split-file", type=Path, default=SHARED_SPLITS / "subject_split.csv")
     p.add_argument("--split", choices=["train", "val", "test"], default="test")
@@ -177,8 +198,10 @@ def main() -> None:
     p.add_argument("--out", type=Path, default=None)
     args = p.parse_args()
 
+    checkpoint = args.checkpoint or default_checkpoint_for(args.model)
+
     metrics = evaluate_checkpoint(
-        args.checkpoint,
+        checkpoint,
         data_root=args.data_root,
         split_file=args.split_file,
         split=args.split,

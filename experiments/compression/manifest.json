@@ -5,30 +5,15 @@
     {
       "name": "FP32",
       "size_kb": 42.77,
-      "macro_f1": 0.91,
-      "accuracy": 0.9608074529353481,
-      "phase_f1": {
-        "LR": 0.86,
-        "LS": 0.98,
-        "PSw": 0.83,
-        "Sw": 0.97
-      },
-      "phase_accuracy": {
-        "LR": 0.9732362342241407,
-        "LS": 0.965599031462559,
-        "PSw": 0.9230238496610688,
-        "Sw": 0.9581711096053821
-      },
-      "phase_support": {
-        "LR": 151735,
-        "LS": 1274499,
-        "PSw": 140589,
-        "Sw": 1016857
-      },
+      "macro_f1": null,
+      "accuracy": null,
+      "phase_f1": null,
+      "phase_accuracy": null,
+      "phase_support": null,
       "params": 10948,
       "note": "full-precision weights",
       "artifact": null,
-      "measured": true
+      "measured": false
     },
     {
       "name": "INT8",

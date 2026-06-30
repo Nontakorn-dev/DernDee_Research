@@ -34,18 +34,19 @@ Run commands from this repository root:
 ```bash
 pip install -r shared/requirements.txt
 
-bash experiments/tinytcn/scripts/train.sh
-bash analysis/scripts/plot_paper_figures.sh
-bash experiments/compression/scripts/run_compression.sh
+bash experiments/scripts/train_all_colab.sh \
+  --config shared/configs/train_fair_comparison.json \
+  --data-root dataset/Xy \
+  --lazy \
+  --device cuda
 ```
 
-If `experiments/tinytcn/runs/fp32_100hz/best_model.pt` is missing, run the TinyTCN training command before compression.
+If `experiments/tinytcn/runs/fp32_100hz/best_model.pt` is missing, train FP32 models first (see `docs/COLAB_TRAINING.md`), then run compression and figure scripts.
 
 ## Status
 
-- TinyTCN FP32: implemented; existing test report shows macro F1 about 0.91.
-- Compression: runner added for INT8, INT4 simulation, Prune50, and INT8+Prune50; metrics require a local checkpoint and evaluation run.
-- Baselines: folders exist, but models are stubs and should be treated as future work or external context.
-- ESP32-S3: benchmark protocol is documented; latency/SRAM/power must be measured on hardware.
+- TinyTCN + baselines: shared training runner implemented; retrain all models with `experiments/scripts/train_all_colab.sh`.
+- Compression: runner for INT8, INT4, Prune50, INT8+Prune50; metrics pending fresh FP32 checkpoint.
+- ESP32-S3: benchmark protocol documented; latency/SRAM/power require hardware measurement.
 
 See `docs/PROTOCOL.md`, `EVALUATION.md`, and `PAPER_TABLES.md`.

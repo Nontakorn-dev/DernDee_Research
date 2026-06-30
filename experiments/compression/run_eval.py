@@ -313,7 +313,7 @@ def main() -> None:
     args = p.parse_args()
 
     ckpt = load_checkpoint(args.checkpoint)
-    fp32_model = model_from_checkpoint(ckpt)
+    fp32_model = model_from_checkpoint(ckpt, args.checkpoint)
     all_results: dict[str, Any] = {}
     t0 = time.time()
 
