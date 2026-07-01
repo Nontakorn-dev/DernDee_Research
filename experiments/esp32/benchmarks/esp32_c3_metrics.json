@@ -1,0 +1,68 @@
+{
+  "board": "ESP32-C3 Dev Module",
+  "toolchain": "Arduino IDE",
+  "status": "template — fill after Serial Monitor capture",
+  "notes": "Synthetic input only; no IMU/BLE. Copy summary lines from firmware into this file.",
+  "configs": {
+    "INT8": {
+      "artifact": "experiments/esp32/exports/INT8/model.tflite",
+      "input_window_samples": 50,
+      "trials": 1000,
+      "warmup": 20,
+      "tensor_arena_kb": 120,
+      "latency_mean_ms": null,
+      "latency_p95_ms": null,
+      "latency_min_ms": null,
+      "latency_max_ms": null,
+      "free_heap_bytes": null,
+      "min_free_heap_bytes": null,
+      "pred": null,
+      "replay_label": null
+    },
+    "INT8+Prune50": {
+      "artifact": "experiments/esp32/exports/INT8+Prune50/model.tflite",
+      "input_window_samples": 50,
+      "trials": 1000,
+      "warmup": 20,
+      "tensor_arena_kb": 120,
+      "latency_mean_ms": null,
+      "latency_p95_ms": null,
+      "latency_min_ms": null,
+      "latency_max_ms": null,
+      "free_heap_bytes": null,
+      "min_free_heap_bytes": null,
+      "pred": null,
+      "replay_label": null
+    },
+    "FP32": {
+      "artifact": "experiments/esp32/exports/FP32/model.tflite",
+      "input_window_samples": 50,
+      "trials": 1000,
+      "warmup": 20,
+      "tensor_arena_kb": 160,
+      "latency_mean_ms": null,
+      "latency_p95_ms": null,
+      "latency_min_ms": null,
+      "latency_max_ms": null,
+      "free_heap_bytes": null,
+      "min_free_heap_bytes": null,
+      "pred": null,
+      "replay_label": null
+    },
+    "Prune50": {
+      "artifact": "experiments/esp32/exports/Prune50/model.tflite",
+      "input_window_samples": 50,
+      "trials": 1000,
+      "warmup": 20,
+      "tensor_arena_kb": 140,
+      "latency_mean_ms": null,
+      "latency_p95_ms": null,
+      "latency_min_ms": null,
+      "latency_max_ms": null,
+      "free_heap_bytes": null,
+      "min_free_heap_bytes": null,
+      "pred": null,
+      "replay_label": null
+    }
+  }
+}

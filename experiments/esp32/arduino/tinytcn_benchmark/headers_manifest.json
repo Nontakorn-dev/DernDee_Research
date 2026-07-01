@@ -1,0 +1,17 @@
+{
+  "active_config": "INT8",
+  "tensor_arena_kb": 120,
+  "headers_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/esp32/arduino/tinytcn_benchmark",
+  "model_headers": {
+    "FP32": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/esp32/arduino/tinytcn_benchmark/model_data_fp32.h",
+    "INT8": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/esp32/arduino/tinytcn_benchmark/model_data_int8.h",
+    "Prune50": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/esp32/arduino/tinytcn_benchmark/model_data_prune50.h",
+    "INT8+Prune50": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/esp32/arduino/tinytcn_benchmark/model_data_int8_plusprune50.h"
+  },
+  "replay_window": {
+    "window_index": 0,
+    "source_trial": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/dataset/Xy/S002/S002_G01_D01_B01_T01.csv",
+    "label": 3,
+    "phase": "Sw"
+  }
+}

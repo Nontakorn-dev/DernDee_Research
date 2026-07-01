@@ -6,12 +6,15 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .venv/
+.venv-export/
 venv/
 
 # Local data and large model artifacts.
 dataset/Xy
 experiments/**/runs/**/*.pt
 experiments/compression/runs/
+experiments/esp32/exports/
+experiments/esp32/arduino/tinytcn_benchmark/model_data*.h
 
 # Generated analysis artifacts that can be regenerated.
 experiments/compression/results/

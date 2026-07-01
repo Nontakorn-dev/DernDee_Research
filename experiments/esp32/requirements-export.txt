@@ -1,0 +1,17 @@
+# Host-side TFLite export (Python 3.12 via .venv-export; TensorFlow does not support 3.14).
+# Bootstrap: bash experiments/esp32/scripts/setup_export_env.sh
+torch>=2.0
+onnx>=1.16
+onnxscript>=0.1
+onnx2tf>=1.26
+onnx-graphsurgeon>=0.3
+simple-onnx-processing-tools>=1.1
+tensorflow>=2.16
+tf-keras>=2.16
+ai-edge-litert>=2.1
+ai-edge-quantizer>=0.7
+numpy>=1.24
+pandas>=2.0
+scikit-learn>=1.3
+tqdm>=4.66
+psutil>=5.9
