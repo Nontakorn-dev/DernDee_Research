@@ -1,6 +1,7 @@
 \documentclass[conference]{IEEEtran}
 \IEEEoverridecommandlockouts
 \usepackage{cite}
+\usepackage{url}
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
 \usepackage{textcomp}
@@ -98,17 +99,23 @@ Gait phase detection using body-worn IMU sensors has been extensively studied, w
 foot-mounted sensors commonly used due to their high sensitivity to phase transitions. Classical
 machine learning approaches (e.g., threshold-based, hidden Markov models) have largely been
 superseded by deep learning methods, including 1D Convolutional Neural Networks (CNNs), Long
-Short-Term Memory (LSTM) networks, and hybrid LSTM+GRU architectures~\cite{ref1}, which achieve
-higher accuracy by learning temporal dependencies directly from raw or lightly processed sensor
-signals. More recently, Transformer-based architectures have been applied to gait phase
-classification~\cite{ref2}, achieving state-of-the-art accuracy at the cost of substantially larger
-parameter counts.
+Short-Term Memory (LSTM) networks, hybrid LSTM+GRU architectures, and---more recently---Transformer
+encoders, which achieve higher accuracy by learning temporal dependencies directly from raw or
+lightly processed sensor signals. Using the same NONAN GaitPrint dataset and shank-mounted,
+six-axis IMU configuration adopted in this study, Choi and Choi~\cite{ref1} directly compared a 1D
+CNN, a hybrid LSTM+GRU model, and a Transformer for four-class gait phase classification, reporting
+comparable performance across the three architectures (macro F1 approximately 91--93\%) with the
+Transformer attaining the highest score. This paper adopts the same three architectures, plus a
+standard TCN, as FP32 baselines under an identical protocol (Section~\ref{sec:method}), but targets
+a distinct research question left open by prior work: how INT8 quantization and structured pruning
+affect \emph{phase-specific} accuracy, and how the resulting models perform when deployed on
+microcontroller-class hardware.
 
 \subsection{Temporal Convolutional Networks (TCNs) for Time-Series Classification}
 
 TCNs use causal, dilated convolutions to achieve large receptive fields with a fraction of the
 parameters required by recurrent architectures, while supporting parallelized
-computation~\cite{ref3}. This property makes TCNs particularly attractive for edge deployment,
+computation~\cite{ref2}. This property makes TCNs particularly attractive for edge deployment,
 where both parameter count and inference latency are critical constraints. Compact TCN variants
 (``TinyTCN'') extend this efficiency further by reducing channel width and depth while preserving
 sufficient receptive field coverage for a full gait cycle.
@@ -117,9 +124,9 @@ sufficient receptive field coverage for a full gait cycle.
 
 Post-training quantization reduces numerical precision (e.g., from 32-bit floating point to 8-bit
 integer representations), substantially reducing model size and enabling faster, more
-energy-efficient inference on integer-optimized microcontroller hardware~\cite{ref4}. Structured
+energy-efficient inference on integer-optimized microcontroller hardware~\cite{ref3}. Structured
 pruning removes entire channels or filters, yielding actual speedups on commodity hardware (unlike
-unstructured pruning, which often requires specialized sparse-matrix support)~\cite{ref5}. Both
+unstructured pruning, which often requires specialized sparse-matrix support)~\cite{ref4}. Both
 techniques have been widely studied for image and audio models, but their differential effect
 across distinct temporal phases of a periodic signal---such as gait phases---remains comparatively
 underexplored.
@@ -127,8 +134,8 @@ underexplored.
 \subsection{Edge AI Deployment on Microcontrollers (ESP32-C3)}
 
 TensorFlow Lite Micro (TFLM) enables compact neural networks to run directly on microcontroller
-hardware with kilobyte-scale memory budgets~\cite{ref6}. The ESP32-C3 is a single-core RISC-V
-microcontroller (160~MHz) with approximately 400~KB of SRAM~\cite{ref7}, making it a low-cost
+hardware with kilobyte-scale memory budgets~\cite{ref5}. The ESP32-C3 is a single-core RISC-V
+microcontroller (160~MHz) with approximately 400~KB of SRAM~\cite{ref6}, making it a low-cost
 target for TinyML deployment. Although it lacks the vector acceleration available on higher-end
 Espressif parts, compact INT8 models can still run on-device when combined with structured pruning,
 motivating its use as the deployment platform in this study.
@@ -147,7 +154,7 @@ information loss. This paper directly addresses this gap.
 \subsection{Dataset and Preprocessing}
 
 \begin{itemize}
-  \item \textbf{Dataset:} NONAN GaitPrint~\cite{ref8}, using shank-mounted IMU channels
+  \item \textbf{Dataset:} NONAN GaitPrint~\cite{ref7}, using shank-mounted IMU channels
         (accelerometer and gyroscope axes).
   \item \textbf{Sampling rate:} Original 200~Hz signal downsampled to 100~Hz for all reported
         experiments, balancing temporal resolution against on-device resource constraints.
@@ -163,37 +170,59 @@ information loss. This paper directly addresses this gap.
         phase-specific F1/accuracy.
 \end{itemize}
 
+Phase support is highly imbalanced (LS and Sw together account for
+$(1{,}274{,}499+1{,}016{,}857)/2{,}583{,}680 \approx 88.7\%$ of test windows, vs.\ only
+$11.3\%$ for the transition phases LR and PSw combined). To prevent the majority phases from
+dominating optimization, all models---including the four FP32 baselines and every compression
+fine-tuning stage---are trained with a class-balanced weighted cross-entropy loss:
+\begin{equation}
+  \mathcal{L} = -\sum_{c=1}^{4} \alpha_c \, y_c \log \hat{y}_c,
+  \qquad
+  \alpha_c = \frac{N}{4 \cdot N_c},
+  \label{eq:loss}
+\end{equation}
+where $N$ is the number of training windows, $N_c$ is the number of windows labeled with phase
+$c$, $y_c$ is the one-hot ground-truth indicator, and $\hat{y}_c$ is the softmax output
+probability for phase $c$. This directly motivates reporting \emph{macro}, rather than
+micro-averaged, metrics throughout this paper.
+
 \subsection{TinyTCN Architecture}
 
 The proposed TinyTCN consists of a small stack of dilated causal convolutional blocks (dilation
 rates 1, 2, and 4) with residual connections, batch normalization, and a lightweight classification
-head (global pooling followed by a dense softmax layer over the four phase classes). The model
-consumes causal 0.5-second windows (50 samples at 100~Hz). Channel width is deliberately kept
-narrow (32 hidden channels) to keep the model near 11K parameters while retaining temporal modeling
-capacity. Fig.~\ref{fig:architecture} illustrates the overall data flow and the internal structure
-of each causal convolutional block.
+head (global pooling followed by a dense softmax layer over the four phase classes). Each block
+computes a dilated causal convolution~\cite{ref2} (kernel size $k$, dilation $d$, ReLU) so that
+each output depends only on present and past inputs. Stacking three such blocks (kernel sizes
+$5,5,3$; dilations $1,2,4$) yields a receptive field of 21 samples (0.21~s at 100~Hz), comfortably
+within the 0.5~s (50-sample) input window
+while keeping the parameter count low. The model consumes causal 0.5-second windows (50 samples at
+100~Hz). Channel width is deliberately kept narrow (32 hidden channels) to keep the model near 11K
+parameters while retaining temporal modeling capacity. Fig.~\ref{fig:architecture} illustrates the
+overall data flow and the internal structure of each causal convolutional block.
 
-\begin{figure*}[!t]
+\begin{figure}[!t]
   \centering
   \begin{tikzpicture}[
       block/.style={rectangle, draw, thick, fill=blue!6, rounded corners,
-        text width=2.05cm, minimum height=1.05cm, align=center, font=\scriptsize},
+        text width=1.55cm, minimum height=0.72cm, align=center, font=\tiny},
       io/.style={rectangle, draw, thick, fill=green!8, rounded corners,
-        text width=1.55cm, minimum height=1.05cm, align=center, font=\scriptsize},
+        text width=1.35cm, minimum height=0.72cm, align=center, font=\tiny},
       sblock/.style={rectangle, draw, thick, fill=gray!8, rounded corners,
-        text width=1.9cm, minimum height=0.85cm, align=center, font=\scriptsize},
-      sum/.style={circle, draw, thick, fill=orange!12, minimum size=0.55cm, font=\scriptsize},
-      arr/.style={thick, -{Latex[length=2mm]}},
-      darr/.style={thick, dashed, -{Latex[length=2mm]}}
+        text width=1.35cm, minimum height=0.62cm, align=center, font=\tiny},
+      sum/.style={circle, draw, thick, fill=orange!12, minimum size=0.42cm, font=\tiny},
+      arr/.style={thick, -{Latex[length=1.5mm]}},
+      darr/.style={thick, dashed, -{Latex[length=1.5mm]}},
+      panel/.style={draw, dashed, thick, inner sep=0.12cm, rounded corners}
     ]
-   
-    \node[io] (input) {Input\\$50\times12$};
-    \node[block, right=0.32cm of input] (b1) {Causal Conv Block 1\\$12\!\to\!32$, $k{=}5$, $d{=}1$};
-    \node[block, right=0.32cm of b1] (b2) {Causal Conv Block 2\\$32\!\to\!32$, $k{=}5$, $d{=}2$};
-    \node[block, right=0.32cm of b2] (b3) {Causal Conv Block 3\\$32\!\to\!32$, $k{=}3$, $d{=}4$};
-    \node[block, right=0.32cm of b3] (gap) {Global Avg. Pool};
-    \node[block, right=0.32cm of gap] (fc) {Dense\\$32\!\to\!4$};
-    \node[io, right=0.32cm of fc] (out) {Softmax\\LR/LS/PSw/Sw};
+
+    % --- (a) Vertical inference pipeline ---
+    \node[io] (input) {Input\\$50{\times}12$};
+    \node[block, below=0.14cm of input] (b1) {Block 1\\$12{\to}32$, $k{=}5$, $d{=}1$};
+    \node[block, below=0.14cm of b1] (b2) {Block 2\\$32{\to}32$, $k{=}5$, $d{=}2$};
+    \node[block, below=0.14cm of b2] (b3) {Block 3\\$32{\to}32$, $k{=}3$, $d{=}4$};
+    \node[block, below=0.14cm of b3] (gap) {Global\\Avg.\ Pool};
+    \node[block, below=0.14cm of gap] (fc) {Dense\\$32{\to}4$};
+    \node[io, below=0.14cm of fc] (out) {Softmax\\LR/LS/PSw/Sw};
 
     \draw[arr] (input) -- (b1);
     \draw[arr] (b1) -- (b2);
@@ -202,38 +231,39 @@ of each causal convolutional block.
     \draw[arr] (gap) -- (fc);
     \draw[arr] (fc) -- (out);
 
-   
-    \node[sblock, below=1.55cm of b1, xshift=1.9cm] (pad) {Causal Pad\\(left-pad $(k{-}1)d$)};
-    \node[sblock, right=0.28cm of pad] (conv) {Conv1D\\kernel $k$, dilation $d$};
-    \node[sblock, right=0.28cm of conv] (bn) {BatchNorm};
-    \node[sblock, right=0.28cm of bn] (relu) {ReLU};
-    \node[sum, right=0.5cm of relu] (add) {$+$};
-    \node[sblock, above=0.42cm of add] (resid) {$1{\times}1$ Conv\\(if $C_{in}\!\neq\!C_{out}$)};
-    \node[sblock, right=0.35cm of add] (bout) {Block\\Output};
+    \node[panel, fit=(input)(out), label={[font=\scriptsize\itshape]above:(a) Inference pipeline}] (pipebox) {};
 
-    \draw[arr] (pad) -- (conv);
-    \draw[arr] (conv) -- (bn);
-    \draw[arr] (bn) -- (relu);
-    \draw[arr] (relu) -- (add);
-    \draw[arr] (add) -- (bout);
-    \node[sblock, left=0.28cm of pad] (bin) {Block\\Input};
-    \draw[arr] (bin) -- (pad);
-    \draw[arr] (bin.south) -- ++(0,-0.32cm) -| (resid.west);
-    \draw[arr] (resid) -- (add);
+    % --- (b) Causal conv block detail (right panel) ---
+    \begin{scope}[xshift=3.35cm, yshift=-0.15cm]
+      \node[sblock] (bin) {Block\\Input};
+      \node[sblock, below=0.12cm of bin] (pad) {Causal Pad\\$(k{-}1)d$ left};
+      \node[sblock, below=0.12cm of pad] (conv) {Conv1D\\$k$, $d$};
+      \node[sblock, below=0.12cm of conv] (bn) {BatchNorm};
+      \node[sblock, below=0.12cm of bn] (relu) {ReLU};
+      \node[sum, below=0.12cm of relu] (add) {$+$};
+      \node[sblock, below=0.12cm of add] (bout) {Block\\Output};
+      \node[sblock, right=0.22cm of conv] (resid) {$1{\times}1$ Conv\\if $C_{in}{\neq}C_{out}$};
 
-    \begin{scope}[on background layer]
-      \node[draw, dashed, thick, fit=(bin)(pad)(conv)(bn)(relu)(add)(resid)(bout),
-        inner sep=0.18cm, label={[font=\scriptsize\itshape]below:(b) Causal Conv Block detail}] (detailbox) {};
+      \draw[arr] (bin) -- (pad);
+      \draw[arr] (pad) -- (conv);
+      \draw[arr] (conv) -- (bn);
+      \draw[arr] (bn) -- (relu);
+      \draw[arr] (relu) -- (add);
+      \draw[arr] (add) -- (bout);
+      \draw[arr] (bin.east) -| (resid.north);
+      \draw[arr] (resid.south) |- (add.east);
+
+      \node[panel, fit=(bin)(bout)(resid),
+        label={[font=\scriptsize\itshape]above:(b) Causal conv block}] (detailbox) {};
     \end{scope}
-    \node[font=\scriptsize\itshape] at ($(input)!0.5!(out)+(0,0.85cm)$) {(a) TinyTCN inference pipeline};
-    \draw[darr] (b1.south) -- ++(0,-0.28cm) -| (detailbox.north -| b1);
+
+    \draw[darr] (b2.east) -- ++(0.18cm,0) |- ($(detailbox.west)+(0,0.35cm)$);
   \end{tikzpicture}
-  \caption{TinyTCN architecture: (a) end-to-end inference pipeline from a $50\times12$ causal input
-  window to a 4-class softmax over gait phases, and (b) internal structure of each causal
-  convolutional block, including the causal left-padding, dilated 1-D convolution, batch
-  normalization, ReLU activation, and identity/$1{\times}1$-convolution residual connection.}
+  \caption{TinyTCN architecture: (a) end-to-end pipeline from a $50{\times}12$ causal window to
+  a 4-class softmax, and (b) internal structure of each causal convolutional block (left-padding,
+  dilated Conv1D, batch norm, ReLU, and residual connection).}
   \label{fig:architecture}
-\end{figure*}
+\end{figure}
 
 \subsection{Baseline Architectures for Context}
 
@@ -242,6 +272,23 @@ INT8 vs.\ pruned). For context, four FP32 baselines (CNN1D, TCN, LSTM+GRU, Trans
 retrained under an identical protocol (Table~\ref{tab:baseline}).
 
 \subsection{Deep Compression Protocol}
+
+\textbf{Post-training quantization.} For an $b$-bit target (INT8: $b=8$), each convolutional and
+fully connected weight tensor $W$ is quantized symmetrically per tensor with scale
+$s = \max(|W|)/(2^{b-1}-1)$ and quantize-dequantize (QDQ) reconstruction
+$\hat{W} = s \cdot \mathrm{clip}(\mathrm{round}(W/s),\, q_{\min},\, q_{\max})$,
+where $q_{\min}=-(2^{b-1}-1)$ and $q_{\max}=2^{b-1}-1$. This QDQ proxy is used for PyTorch-side
+test-set evaluation (Section~\ref{sec:results}); ESP32 deployment instead uses TFLite's full-integer
+post-training quantization on the exported graph.
+
+\textbf{Structured channel pruning.} For a hidden width $H=32$, each output (hidden) channel
+$j \in \{1,\ldots,H\}$ is scored by its aggregate $\ell_1$ weight magnitude
+$I_j = \sum_{l=1}^{3} \sum_{i,k} |W^{(l)}_{j,i,k}|$ across all three convolutional layers in the
+stem, where $i$ and $k$ index input channels and kernel taps, respectively. The top
+$\lfloor 0.5 H \rfloor = 16$ channels by $I_j$ are retained (Prune50), the remaining rows/columns
+are removed from every stem layer and the classification head, and the pruned model is fine-tuned
+for 5 epochs (Adam, $\mathrm{lr}=10^{-4}$) using the same class-balanced loss
+(Eq.~\ref{eq:loss}) before re-evaluation.
 
 Table~\ref{tab:compression} summarizes the compression techniques applied to TinyTCN.
 
@@ -272,6 +319,10 @@ a fixed 120~KB tensor arena.
 
 \subsection{Evaluation Metrics}
 
+Macro F1 is the unweighted mean of the four per-phase F1 scores. Unlike accuracy or a
+support-weighted average, this gives Loading Response (LR) and Pre-Swing (PSw) equal weight to the
+majority phases despite their $\sim\!6\%$ and $\sim\!5\%$ test-set support, respectively.
+
 \begin{itemize}
   \item \textbf{Phase-specific F1-score and accuracy} for LR, LS, PSw, and Sw individually.
   \item \textbf{Pareto analysis:} macro F1-score vs.\ measured or estimated model size (KB) per
@@ -296,27 +347,38 @@ uniform across phases: Transformer attains the highest F1 on LS and PSw, and LST
 TinyTCN leads only on Sw---indicating that TinyTCN's overall macro F1 advantage stems from a more
 balanced profile rather than dominance on any single phase.
 
-\begin{table*}[!t]
+\begin{table}[!t]
   \caption{Baseline Comparison on the Held-Out Test Split (FP32, Fair Training Protocol)}
   \label{tab:baseline}
   \centering
   \footnotesize
-  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccccc@{}}
+  \textit{Complexity and Overall Performance}\\[2pt]
+  \begin{tabular}{@{}lcccc@{}}
     \toprule
-    \textbf{Model} & \textbf{Params} & \textbf{Size} & \textbf{Acc.} & \textbf{Macro F1} &
-      \multicolumn{4}{c}{\textbf{Phase-Specific F1 (\%)}} \\
-    \cmidrule(lr){6-9}
-    & & \textbf{(KB)} & \textbf{(\%)} & \textbf{(\%)} &
-      \textbf{LR} & \textbf{LS} & \textbf{PSw} & \textbf{Sw} \\
+    \textbf{Model} & \textbf{Params} & \textbf{Size (KB)} & \textbf{Acc.\ (\%)} & \textbf{Macro F1 (\%)} \\
     \midrule
-    \textbf{TinyTCN (Ours)} & 10,948 & 42.8 & \textbf{96.30} & \textbf{91.50} & 87.26 & 97.88 & 82.99 & \textbf{97.87} \\
-    Transformer & 25,956 & 101.4 & 96.38 & 91.73 & 87.28 & \textbf{98.07} & \textbf{83.84} & 97.72 \\
-    LSTM+GRU & 12,356 & 48.3 & 96.25 & 91.38 & \textbf{87.85} & 97.91 & 82.00 & 97.78 \\
-    TCN & 11,560 & 45.2 & 96.04 & 90.96 & 86.40 & 97.71 & 82.01 & 97.73 \\
-    CNN1D & 10,727 & 41.9 & 95.58 & 90.23 & 85.77 & 97.54 & 80.29 & 97.34 \\
+    \textbf{TinyTCN (Ours)} & 10,948 & 42.8 & \textbf{96.30} & \textbf{91.50} \\
+    Transformer & 25,956 & 101.4 & 96.38 & 91.73 \\
+    LSTM+GRU & 12,356 & 48.3 & 96.25 & 91.38 \\
+    TCN & 11,560 & 45.2 & 96.04 & 90.96 \\
+    CNN1D & 10,727 & 41.9 & 95.58 & 90.23 \\
     \bottomrule
-  \end{tabular*}
-\end{table*}
+  \end{tabular}
+  \vspace{5pt}
+
+  \textit{Phase-Specific F1 (\%)}\\[2pt]
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Model} & \textbf{LR} & \textbf{LS} & \textbf{PSw} & \textbf{Sw} \\
+    \midrule
+    \textbf{TinyTCN (Ours)} & 87.26 & 97.88 & 82.99 & \textbf{97.87} \\
+    Transformer & 87.28 & \textbf{98.07} & \textbf{83.84} & 97.72 \\
+    LSTM+GRU & \textbf{87.85} & 97.91 & 82.00 & 97.78 \\
+    TCN & 86.40 & 97.71 & 82.01 & 97.73 \\
+    CNN1D & 85.77 & 97.54 & 80.29 & 97.34 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \subsection{Compression Trade-off and Phase-Specific F1}
 
@@ -329,26 +391,37 @@ phase---showed the largest F1 degradation under pruning ($-$3.32~pp for Prune50 
 INT8+Prune50 relative to FP32), whereas INT8 quantization alone changed each phase F1 by at most
 0.04~pp.
 
-\begin{table*}[!t]
+\begin{table}[!t]
   \caption{TinyTCN Compression Results and Phase-Specific F1 on the Test Split}
   \label{tab:compression-results}
   \centering
   \footnotesize
-  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lccccccccc@{}}
+  \textit{Complexity, Size, and Overall Performance}\\[2pt]
+  \begin{tabular}{@{}lccccc@{}}
     \toprule
-    \textbf{Config} & \textbf{Params} & \textbf{Est.} & \textbf{TFLite} & \textbf{Acc.} &
-      \textbf{Macro F1} & \multicolumn{4}{c}{\textbf{Phase-Specific F1 (\%)}} \\
-    \cmidrule(lr){7-10}
-    & & \textbf{(KB)} & \textbf{(KB)} & \textbf{(\%)} & \textbf{(\%)} &
-      \textbf{LR} & \textbf{LS} & \textbf{PSw} & \textbf{Sw} \\
+    \textbf{Config} & \textbf{Params} & \textbf{Est.} & \textbf{TFLite} & \textbf{Acc.} & \textbf{Macro F1} \\
+    & & \textbf{(KB)} & \textbf{(KB)} & \textbf{(\%)} & \textbf{(\%)} \\
     \midrule
-    FP32 & 10,948 & 42.8 & 49.2 & 96.30 & 91.50 & 87.26 & 97.88 & 82.99 & 97.87 \\
-    INT8 & 10,948 & 12.7 & 18.9 & 96.27 & 91.43 & 87.04 & 97.84 & 82.95 & 97.87 \\
-    Prune50 & 3,428 & 13.4 & 20.3 & 94.74 & 88.73 & 81.32 & 96.88 & 79.67 & 97.03 \\
-    INT8+Prune50 & 3,428 & 5.4 & 11.6 & 94.56 & 88.45 & 80.52 & 96.76 & 79.56 & 96.95 \\
+    FP32 & 10,948 & 42.8 & 49.2 & 96.30 & 91.50 \\
+    INT8 & 10,948 & 12.7 & 18.9 & 96.27 & 91.43 \\
+    Prune50 & 3,428 & 13.4 & 20.3 & 94.74 & 88.73 \\
+    INT8+Prune50 & 3,428 & 5.4 & 11.6 & 94.56 & 88.45 \\
     \bottomrule
-  \end{tabular*}
-\end{table*}
+  \end{tabular}
+  \vspace{5pt}
+
+  \textit{Phase-Specific F1 (\%)}\\[2pt]
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Config} & \textbf{LR} & \textbf{LS} & \textbf{PSw} & \textbf{Sw} \\
+    \midrule
+    FP32 & 87.26 & 97.88 & 82.99 & 97.87 \\
+    INT8 & 87.04 & 97.84 & 82.95 & 97.87 \\
+    Prune50 & 81.32 & 96.88 & 79.67 & 97.03 \\
+    INT8+Prune50 & 80.52 & 96.76 & 79.56 & 96.95 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \subsection{Phase-Specific Accuracy Under Compression}
 
@@ -485,24 +558,28 @@ measure power, and extend the analysis to pathological gait populations.
 
 \section*{Acknowledgment}
 
-[Optional: acknowledge funding sources, dataset providers, or institutional support here.]
+The authors thank the creators of the NONAN GaitPrint dataset for making their IMU gait
+recordings publicly available, which made this study possible.
 
 \begin{thebibliography}{00}
-\bibitem{ref1} [Author(s)]. (Year). Hybrid LSTM-GRU architecture for IMU-based gait phase
-recognition. \textit{[Journal/Conference Name]}.
-\bibitem{ref2} A. Choi and H. Choi. (Year). Transformer-based gait phase classification using
-wearable sensors. \textit{[Journal/Conference Name]}.
-\bibitem{ref3} S. Bai, J. Z. Kolter, and V. Koltun. (2018). An empirical evaluation of generic
-convolutional and recurrent networks for sequence modeling. \textit{arXiv preprint}.
-\bibitem{ref4} B. Jacob et al. (2018). Quantization and training of neural networks for efficient
-integer-arithmetic-only inference. \textit{CVPR}.
-\bibitem{ref5} S. Han, H. Mao, and W. J. Dally. (2016). Deep compression: Compressing deep neural
-networks with pruning, trained quantization and Huffman coding. \textit{ICLR}.
-\bibitem{ref6} R. David et al. (2021). TensorFlow Lite Micro: Embedded machine learning for TinyML
-systems. \textit{MLSys}.
-\bibitem{ref7} Espressif Systems. (Year). ESP32-C3 Technical Reference Manual. \textit{Espressif
-Systems}.
-\bibitem{ref8} [Dataset authors]. NONAN GaitPrint Dataset. \textit{[Source/Repository]}.
+\bibitem{ref1} W. Choi and M.-T. Choi, ``Deep learning-based gait phase detection using
+shank-mounted IMU data: Classification approach,'' \textit{PLOS ONE}, vol.~21, no.~4, p.~e0344002,
+2026, doi: 10.1371/journal.pone.0344002.
+\bibitem{ref2} S. Bai, J. Z. Kolter, and V. Koltun, ``An empirical evaluation of generic
+convolutional and recurrent networks for sequence modeling,'' \textit{arXiv preprint
+arXiv:1803.01271}, 2018.
+\bibitem{ref3} B. Jacob et al., ``Quantization and training of neural networks for efficient
+integer-arithmetic-only inference,'' in \textit{Proc. IEEE Conf. Computer Vision and Pattern
+Recognition (CVPR)}, 2018, pp.~2704--2713.
+\bibitem{ref4} S. Han, H. Mao, and W. J. Dally, ``Deep compression: Compressing deep neural
+networks with pruning, trained quantization and Huffman coding,'' in \textit{Proc. Int. Conf.
+Learning Representations (ICLR)}, 2016.
+\bibitem{ref5} R. David et al., ``TensorFlow Lite Micro: Embedded machine learning for TinyML
+systems,'' in \textit{Proc. Machine Learning and Systems (MLSys)}, vol.~3, 2021, pp.~800--811.
+\bibitem{ref6} Espressif Systems, \textit{ESP32-C3 Technical Reference Manual}, version~1.3,
+2024. [Online]. Available: \url{https://www.espressif.com/sites/default/files/documentation/esp32-c3_technical_reference_manual_en.pdf}
+\bibitem{ref7} T. M. Wiles et al., ``NONAN GaitPrint: An IMU gait database of healthy young
+adults,'' \textit{Scientific Data}, vol.~10, no.~867, 2023, doi: 10.1038/s41597-023-02704-z.
 \end{thebibliography}
 
 \end{document}
