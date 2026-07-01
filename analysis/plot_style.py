@@ -9,11 +9,21 @@ import matplotlib.pyplot as plt
 PHASES = ("LR", "LS", "PSw", "Sw")
 CONFIG_ORDER = ("FP32", "INT8", "Prune50", "INT8+Prune50")
 
+# Okabe-Ito colorblind-safe qualitative palette; also chosen to remain
+# distinguishable when the paper is printed in grayscale.
 CONFIG_COLORS = {
-    "FP32": "#2563eb",
-    "INT8": "#059669",
-    "Prune50": "#7c3aed",
-    "INT8+Prune50": "#dc2626",
+    "FP32": "#0072B2",
+    "INT8": "#009E73",
+    "Prune50": "#CC79A7",
+    "INT8+Prune50": "#D55E00",
+}
+
+# Hatch patterns give a second (non-color) encoding for grayscale printing.
+CONFIG_HATCHES = {
+    "FP32": "",
+    "INT8": "//",
+    "Prune50": "\\\\",
+    "INT8+Prune50": "xx",
 }
 
 SPLIT_LABELS = {
@@ -26,19 +36,31 @@ SPLIT_LABELS = {
 def apply_paper_style() -> None:
     plt.rcParams.update(
         {
-            "figure.dpi": 120,
+            "figure.dpi": 150,
             "savefig.dpi": 300,
-            "font.size": 10,
-            "axes.titlesize": 11,
-            "axes.labelsize": 10,
-            "legend.fontsize": 9,
-            "xtick.labelsize": 9,
-            "ytick.labelsize": 9,
+            "font.family": "serif",
+            "font.serif": ["Nimbus Roman", "Times New Roman", "Times", "DejaVu Serif"],
+            "mathtext.fontset": "stix",
+            "font.size": 9,
+            "axes.titlesize": 9,
+            "axes.titleweight": "bold",
+            "axes.labelsize": 9,
+            "legend.fontsize": 8,
+            "xtick.labelsize": 8,
+            "ytick.labelsize": 8,
             "axes.spines.top": False,
             "axes.spines.right": False,
             "axes.grid": True,
-            "grid.alpha": 0.25,
-            "grid.linestyle": "--",
+            "axes.axisbelow": True,
+            "grid.color": "#c7ccd1",
+            "grid.alpha": 0.6,
+            "grid.linestyle": ":",
+            "grid.linewidth": 0.6,
+            "xtick.direction": "out",
+            "ytick.direction": "out",
+            "legend.frameon": False,
+            "axes.edgecolor": "#333333",
+            "axes.linewidth": 0.8,
         }
     )
 
@@ -49,7 +71,7 @@ def save_figure(fig: plt.Figure, pdf_path: Path, png_path: Path | None = None) -
         fig.tight_layout()
     fig.savefig(pdf_path, bbox_inches="tight")
     if png_path is not None:
-        fig.savefig(png_path, dpi=150, bbox_inches="tight")
+        fig.savefig(png_path, dpi=200, bbox_inches="tight")
     plt.close(fig)
 
 

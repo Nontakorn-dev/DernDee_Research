@@ -31,6 +31,11 @@ METRIC_LABELS = {
     "phase_f1": "Phase F1 (%)",
 }
 
+# Offsets (in x-axis units) of each config within a phase group, in
+# CONFIG_ORDER sequence, so the connecting line reads left-to-right as
+# "increasing compression".
+GROUP_OFFSETS = (-0.27, -0.09, 0.09, 0.27)
+
 
 def load_split_counts() -> dict[str, int]:
     split_file = SHARED_SPLITS / "subject_split.json"
@@ -66,6 +71,13 @@ def phase_deltas(point: dict, baseline: dict, metric: str) -> list[float | None]
     return deltas
 
 
+def _offsets(n: int) -> list[float]:
+    if n == len(GROUP_OFFSETS):
+        return list(GROUP_OFFSETS)
+    span = GROUP_OFFSETS[-1] - GROUP_OFFSETS[0] if n > 1 else 0.0
+    return [GROUP_OFFSETS[0] + span * (i / (n - 1)) if n > 1 else 0.0 for i in range(n)]
+
+
 def plot_phase_degradation(
     manifest_path: Path,
     *,
@@ -81,93 +93,126 @@ def plot_phase_degradation(
     compressed = [name for name in configs if name != "FP32"]
 
     apply_paper_style()
-    fig, axes = plt.subplots(1, 2, figsize=(11.5, 4.5), sharex=True)
+    fig, (ax_abs, ax_delta) = plt.subplots(1, 2, figsize=(7.0, 2.85), layout="constrained")
 
     x = np.arange(len(PHASES))
-    width = 0.8 / max(len(configs), 1)
+    offsets_abs = _offsets(len(configs))
 
-    ax_abs = axes[0]
-    for idx, name in enumerate(configs):
-        offset = (idx - (len(configs) - 1) / 2) * width
-        values = phase_values(by_name[name], metric)
-        heights = [0.0 if v is None else v for v in values]
-        bars = ax_abs.bar(
-            x + offset,
-            heights,
-            width=width,
-            label=name,
-            color=CONFIG_COLORS.get(name, "#64748b"),
-            edgecolor="white",
-            linewidth=0.6,
-        )
-        for bar, value in zip(bars, values):
-            if value is not None:
-                ax_abs.text(
-                    bar.get_x() + bar.get_width() / 2,
-                    bar.get_height() + 0.4,
-                    f"{value:.1f}",
-                    ha="center",
-                    va="bottom",
-                    fontsize=7,
-                )
+    # Light vertical separators between phase groups for visual grouping
+    # without relying on hatch fills or dense bar packing.
+    for ax in (ax_abs, ax_delta):
+        for boundary in range(len(PHASES) - 1):
+            ax.axvline(boundary + 0.5, color="#e5e7eb", linewidth=0.8, zorder=0)
+
+    legend_handles: dict[str, plt.Artist] = {}
+
+    all_abs_values: list[float] = []
+    for phase_idx in range(len(PHASES)):
+        xs = [phase_idx + off for off in offsets_abs]
+        ys = [phase_values(by_name[name], metric)[phase_idx] for name in configs]
+        clean = [(xv, yv) for xv, yv in zip(xs, ys) if yv is not None]
+        if clean:
+            ax_abs.plot(*zip(*clean), "-", color="#b8bec6", linewidth=1.1, zorder=1)
+        for name, xv, yv in zip(configs, xs, ys):
+            if yv is None:
+                continue
+            all_abs_values.append(yv)
+            handle = ax_abs.scatter(
+                xv,
+                yv,
+                s=40,
+                color=CONFIG_COLORS.get(name, "#64748b"),
+                edgecolor="white",
+                linewidth=0.8,
+                zorder=3,
+            )
+            legend_handles.setdefault(name, handle)
 
     ax_abs.set_xticks(x)
     ax_abs.set_xticklabels(PHASES)
+    ax_abs.set_xlim(-0.5, len(PHASES) - 0.5)
     ax_abs.set_ylabel(METRIC_LABELS[metric])
-    ax_abs.set_title("(a) Absolute phase performance (test split)")
-    ax_abs.set_ylim(0, 105)
-    ax_abs.legend(loc="lower right", ncol=2, frameon=False)
+    ax_abs.set_title("(a) Absolute phase performance", fontsize=9)
+    if all_abs_values:
+        pad = max(2.0, 0.15 * (max(all_abs_values) - min(all_abs_values)))
+        ax_abs.set_ylim(min(all_abs_values) - pad, max(all_abs_values) + pad)
 
-    ax_delta = axes[1]
+    offsets_delta = _offsets(len(compressed)) if compressed else []
     if compressed:
-        width_delta = 0.8 / max(len(compressed), 1)
-        for idx, name in enumerate(compressed):
-            offset = (idx - (len(compressed) - 1) / 2) * width_delta
-            deltas = phase_deltas(by_name[name], baseline, metric)
-            heights = [0.0 if d is None else d for d in deltas]
-            bars = ax_delta.bar(
-                x + offset,
-                heights,
-                width=width_delta,
-                label=name,
-                color=CONFIG_COLORS.get(name, "#64748b"),
-                edgecolor="white",
-                linewidth=0.6,
-            )
-            for bar, delta in zip(bars, deltas):
-                if delta is not None:
-                    ax_delta.text(
-                        bar.get_x() + bar.get_width() / 2,
-                        bar.get_height() + (0.15 if delta >= 0 else -0.45),
-                        f"{delta:+.1f}",
-                        ha="center",
-                        va="bottom" if delta >= 0 else "top",
-                        fontsize=7,
-                    )
+        for phase_idx in range(len(PHASES)):
+            for name, off in zip(compressed, offsets_delta):
+                delta = phase_deltas(by_name[name], baseline, metric)[phase_idx]
+                if delta is None:
+                    continue
+                xv = phase_idx + off
+                ax_delta.plot(
+                    [xv, xv],
+                    [0.0, delta],
+                    "-",
+                    color=CONFIG_COLORS.get(name, "#64748b"),
+                    linewidth=2.0,
+                    solid_capstyle="round",
+                    zorder=2,
+                    alpha=0.85,
+                )
+                handle = ax_delta.scatter(
+                    xv,
+                    delta,
+                    s=34,
+                    color=CONFIG_COLORS.get(name, "#64748b"),
+                    edgecolor="white",
+                    linewidth=0.7,
+                    zorder=3,
+                )
+                legend_handles.setdefault(name, handle)
+                ax_delta.text(
+                    xv,
+                    delta + (0.22 if delta >= 0 else -0.22),
+                    f"{delta:+.1f}",
+                    ha="center",
+                    va="bottom" if delta >= 0 else "top",
+                    fontsize=6.5,
+                )
     else:
         ax_delta.text(
             0.5,
             0.5,
-            "Run compression evaluation to populate\ndegradation bars for INT8 / Prune50 / INT8+Prune50.",
+            "Run compression evaluation to populate\ndegradation markers for INT8 / Prune50 / INT8+Prune50.",
             ha="center",
             va="center",
             transform=ax_delta.transAxes,
-            fontsize=10,
+            fontsize=9,
             color="#64748b",
         )
 
-    ax_delta.axhline(0.0, color="#334155", linewidth=0.8)
+    ax_delta.axhline(0.0, color="#333333", linewidth=0.8, zorder=1)
     ax_delta.set_xticks(x)
     ax_delta.set_xticklabels(PHASES)
-    ax_delta.set_ylabel("Change vs FP32 (percentage points)")
-    ax_delta.set_title("(b) Phase degradation relative to FP32 (test split)")
-    if compressed:
-        ax_delta.legend(loc="lower right", ncol=2, frameon=False)
+    ax_delta.set_xlim(-0.5, len(PHASES) - 0.5)
+    ax_delta.set_ylabel("\u0394 vs. FP32 (pp)")
+    ax_delta.set_title("(b) Degradation relative to FP32", fontsize=9)
+    deltas_all = [
+        d
+        for name in compressed
+        for d in phase_deltas(by_name[name], baseline, metric)
+        if d is not None
+    ]
+    if deltas_all:
+        pad = max(0.7, 0.3 * (max(deltas_all) - min(deltas_all)))
+        ax_delta.set_ylim(min(deltas_all) - pad, max(deltas_all) + pad)
 
-    split_counts = load_split_counts()
-    test_n = split_counts.get("test")
-    suffix = f" | test subjects: {test_n}" if test_n else ""
-    fig.suptitle(f"Phase-specific compression impact{suffix}", y=1.02, fontsize=12)
+    ordered_names = [name for name in configs if name in legend_handles]
+    fig.legend(
+        [legend_handles[name] for name in ordered_names],
+        ordered_names,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.15),
+        ncol=len(ordered_names),
+        frameon=False,
+        fontsize=8,
+        handletextpad=0.4,
+        columnspacing=1.3,
+    )
 
     save_figure(fig, out_pdf, out_png)
 

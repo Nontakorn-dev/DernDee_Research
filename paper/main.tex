@@ -291,94 +291,85 @@ a fixed 120~KB tensor arena.
 Table~\ref{tab:baseline} compares TinyTCN against four FP32 baselines trained under an identical
 protocol (12-channel bilateral shank IMU, 100~Hz, subject-wise split). TinyTCN achieves the highest
 test macro F1 (91.50\%) while remaining the smallest full-precision model among the compared
-architectures except CNN1D.
+architectures except CNN1D. Per-phase F1 (rightmost four columns) shows this advantage is not
+uniform across phases: Transformer attains the highest F1 on LS and PSw, and LSTM+GRU on LR, while
+TinyTCN leads only on Sw---indicating that TinyTCN's overall macro F1 advantage stems from a more
+balanced profile rather than dominance on any single phase.
 
-\begin{table}[!t]
+\begin{table*}[!t]
   \caption{Baseline Comparison on the Held-Out Test Split (FP32, Fair Training Protocol)}
   \label{tab:baseline}
   \centering
   \footnotesize
-  \begin{tabular}{@{}lcccc@{}}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccccc@{}}
     \toprule
-    \textbf{Model} & \textbf{Params} & \textbf{Size (KB)} & \textbf{Acc.\ (\%)} & \textbf{F1 (\%)} \\
+    \textbf{Model} & \textbf{Params} & \textbf{Size} & \textbf{Acc.} & \textbf{Macro F1} &
+      \multicolumn{4}{c}{\textbf{Phase-Specific F1 (\%)}} \\
+    \cmidrule(lr){6-9}
+    & & \textbf{(KB)} & \textbf{(\%)} & \textbf{(\%)} &
+      \textbf{LR} & \textbf{LS} & \textbf{PSw} & \textbf{Sw} \\
     \midrule
-    \textbf{TinyTCN (Ours)} & 10,948 & 42.8 & \textbf{96.30} & \textbf{91.50} \\
-    Transformer & 25,956 & 101.4 & 96.38 & 91.73 \\
-    LSTM+GRU & 12,356 & 48.3 & 96.25 & 91.38 \\
-    TCN & 11,560 & 45.2 & 96.04 & 90.96 \\
-    CNN1D & 10,727 & 41.9 & 95.58 & 90.23 \\
+    \textbf{TinyTCN (Ours)} & 10,948 & 42.8 & \textbf{96.30} & \textbf{91.50} & 87.26 & 97.88 & 82.99 & \textbf{97.87} \\
+    Transformer & 25,956 & 101.4 & 96.38 & 91.73 & 87.28 & \textbf{98.07} & \textbf{83.84} & 97.72 \\
+    LSTM+GRU & 12,356 & 48.3 & 96.25 & 91.38 & \textbf{87.85} & 97.91 & 82.00 & 97.78 \\
+    TCN & 11,560 & 45.2 & 96.04 & 90.96 & 86.40 & 97.71 & 82.01 & 97.73 \\
+    CNN1D & 10,727 & 41.9 & 95.58 & 90.23 & 85.77 & 97.54 & 80.29 & 97.34 \\
     \bottomrule
-  \end{tabular}
-\end{table}
+  \end{tabular*}
+\end{table*}
 
-\subsection{Compression Trade-off (Classification and Size)}
+\subsection{Compression Trade-off and Phase-Specific F1}
 
 Table~\ref{tab:compression-results} summarizes PyTorch-side compression evaluation on the same test
-split. INT8 weight quantization preserved accuracy almost exactly, while structured pruning reduced
-parameter count to 3,428 ($-$68.7\%) at a larger macro F1 cost. Exported TFLite sizes (rightmost
-column) were measured for ESP32 deployment.
-
-\begin{table}[!t]
-  \caption{TinyTCN Compression Results on the Test Split}
-  \label{tab:compression-results}
-  \centering
-  \footnotesize
-  \begin{tabular}{@{}lccccc@{}}
-    \toprule
-    \textbf{Config} & \textbf{Params} & \textbf{Est.} & \textbf{TFLite} & \textbf{Acc.} & \textbf{F1} \\
-    & & \textbf{(KB)} & \textbf{(KB)} & \textbf{(\%)} & \textbf{(\%)} \\
-    \midrule
-    FP32 & 10,948 & 42.8 & 49.2 & 96.30 & 91.50 \\
-    INT8 & 10,948 & 12.7 & 18.9 & 96.27 & 91.43 \\
-    Prune50 & 3,428 & 13.4 & 20.3 & 94.74 & 88.73 \\
-    INT8+Prune50 & 3,428 & 5.4 & 11.6 & 94.56 & 88.45 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\subsection{Phase-Specific F1 Under Compression}
-
-Table~\ref{tab:phase-f1} reports phase-specific F1 on the test split. PSw---a brief transition
+split, reporting model complexity, exported TFLite size, overall accuracy, and macro/phase-specific
+F1 together. INT8 weight quantization preserved accuracy and macro F1 almost exactly, while
+structured pruning reduced parameter count to 3,428 ($-$68.7\%) at a larger macro F1 cost.
+Exported TFLite sizes (fourth column) were measured for ESP32 deployment. PSw---a brief transition
 phase---showed the largest F1 degradation under pruning ($-$3.32~pp for Prune50 and $-$3.43~pp for
 INT8+Prune50 relative to FP32), whereas INT8 quantization alone changed each phase F1 by at most
 0.04~pp.
 
-\begin{table}[!t]
-  \caption{Phase-Specific Test F1 (\%) Under Compression}
-  \label{tab:phase-f1}
+\begin{table*}[!t]
+  \caption{TinyTCN Compression Results and Phase-Specific F1 on the Test Split}
+  \label{tab:compression-results}
   \centering
   \footnotesize
-  \begin{tabular}{@{}lccccc@{}}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lccccccccc@{}}
     \toprule
-    \textbf{Config} & \textbf{Macro F1} & \textbf{LR} & \textbf{LS} & \textbf{PSw} & \textbf{Sw} \\
+    \textbf{Config} & \textbf{Params} & \textbf{Est.} & \textbf{TFLite} & \textbf{Acc.} &
+      \textbf{Macro F1} & \multicolumn{4}{c}{\textbf{Phase-Specific F1 (\%)}} \\
+    \cmidrule(lr){7-10}
+    & & \textbf{(KB)} & \textbf{(KB)} & \textbf{(\%)} & \textbf{(\%)} &
+      \textbf{LR} & \textbf{LS} & \textbf{PSw} & \textbf{Sw} \\
     \midrule
-    FP32 & 91.50 & 87.26 & 97.88 & 82.99 & 97.87 \\
-    INT8 & 91.43 & 87.04 & 97.84 & 82.95 & 97.87 \\
-    Prune50 & 88.73 & 81.32 & 96.88 & 79.67 & 97.03 \\
-    INT8+Prune50 & 88.45 & 80.52 & 96.76 & 79.56 & 96.95 \\
+    FP32 & 10,948 & 42.8 & 49.2 & 96.30 & 91.50 & 87.26 & 97.88 & 82.99 & 97.87 \\
+    INT8 & 10,948 & 12.7 & 18.9 & 96.27 & 91.43 & 87.04 & 97.84 & 82.95 & 97.87 \\
+    Prune50 & 3,428 & 13.4 & 20.3 & 94.74 & 88.73 & 81.32 & 96.88 & 79.67 & 97.03 \\
+    INT8+Prune50 & 3,428 & 5.4 & 11.6 & 94.56 & 88.45 & 80.52 & 96.76 & 79.56 & 96.95 \\
     \bottomrule
-  \end{tabular}
-\end{table}
+  \end{tabular*}
+\end{table*}
 
 \subsection{Phase-Specific Accuracy Under Compression}
 
-Table~\ref{tab:phase-degradation} reports phase-specific accuracy. Phase accuracy can diverge
-from F1 when precision drops but recall remains high, notably for LR under pruning. This motivates
-reporting both metrics in gait-phase studies.
+Table~\ref{tab:phase-degradation} reports phase-specific accuracy (overall test accuracy per
+config already appears in Table~\ref{tab:compression-results} and is omitted here to avoid
+duplication). Phase accuracy can diverge from F1 when precision drops but recall remains high,
+notably for LR under pruning. This motivates reporting both metrics in gait-phase studies.
 
 \begin{table}[!t]
   \caption{Phase-Specific Test Accuracy (\%) Under Compression}
   \label{tab:phase-degradation}
   \centering
   \footnotesize
-  \begin{tabular}{@{}lccccc@{}}
+  \begin{tabular}{@{}lcccc@{}}
     \toprule
-    \textbf{Config} & \textbf{Overall} & \textbf{LR} & \textbf{LS} & \textbf{PSw} & \textbf{Sw} \\
+    \textbf{Config} & \textbf{LR} & \textbf{LS} & \textbf{PSw} & \textbf{Sw} \\
     \midrule
-    FP32 & 96.30 & 95.03 & 96.38 & 91.67 & 97.03 \\
-    INT8 & 96.27 & 95.20 & 96.28 & 91.18 & 97.11 \\
-    Prune50 & 94.74 & 97.39 & 94.36 & 94.11 & 94.90 \\
-    INT8+Prune50 & 94.56 & 97.62 & 94.10 & 94.41 & 94.71 \\
+    FP32 & 95.03 & 96.38 & 91.67 & 97.03 \\
+    INT8 & 95.20 & 96.28 & 91.18 & 97.11 \\
+    Prune50 & 97.39 & 94.36 & 94.11 & 94.90 \\
+    INT8+Prune50 & 97.62 & 94.10 & 94.41 & 94.71 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -412,18 +403,22 @@ latency versus FP32 float on this board ($\sim$260~ms), whereas INT8+Prune50 red
 
 \begin{figure}[!t]
   \centering
-  \includegraphics[width=0.85\linewidth]{figures/pareto_front.pdf}
-  \caption{Pareto front: macro F1-score vs.\ estimated deployment size (KB) for FP32, INT8,
-  Prune50, and INT8+Prune50.}
+  \includegraphics[width=\linewidth]{figures/pareto_front.pdf}
+  \caption{Pareto front of macro F1-score vs.\ deployment size (KB). Filled markers connected by
+  the solid line are Pareto-optimal; Prune50 (hollow marker) is dominated by INT8, which achieves
+  both a smaller footprint and higher macro F1.}
   \label{fig:pareto}
 \end{figure}
 
-\begin{figure}[!t]
+\begin{figure*}[!t]
   \centering
-  \includegraphics[width=0.85\linewidth]{figures/phase_degradation.pdf}
-  \caption{Phase-specific accuracy change relative to the FP32 baseline under compression.}
+  \includegraphics[width=\linewidth]{figures/phase_degradation.pdf}
+  \caption{Phase-specific test accuracy under compression. (a) Absolute per-phase accuracy for all
+  four configurations, connected in order of increasing compression (FP32 $\to$ INT8 $\to$ Prune50
+  $\to$ INT8+Prune50). (b) Accuracy change relative to the FP32 baseline, highlighting the larger
+  degradation in the transition phases LR and PSw under structured pruning.}
   \label{fig:phase-degradation}
-\end{figure}
+\end{figure*}
 
 \section{Discussion}
 \label{sec:discussion}
@@ -435,8 +430,8 @@ drop under structured pruning ($-$3.32~pp for Prune50 and $-$3.43~pp for INT8+Pr
 quantization alone changed phase F1 by at most 0.04~pp. PSw is a short transition window whose
 decision boundary likely depends on finer temporal detail removed when hidden channels are halved.
 Notably, LR accuracy increased under pruning (+2.36~pp, Table~\ref{tab:phase-degradation}) even as
-LR F1 fell (Table~\ref{tab:phase-f1}), indicating reduced precision despite higher recall---a
-pattern invisible when reporting accuracy alone.
+LR F1 fell (Table~\ref{tab:compression-results}), indicating reduced precision despite higher
+recall---a pattern invisible when reporting accuracy alone.
 
 \subsection{Role of Dilated Convolutions Under Compression}
 
