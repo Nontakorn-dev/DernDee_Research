@@ -2,14 +2,14 @@
 
 Research repo for the paper **Impact of Deep Compression Techniques on Phase-Specific Accuracy in TinyTCN for Real-Time Gait Detection**.
 
-The project studies how TinyTCN compression affects each gait phase (LR, LS, PSw, Sw) when moving toward ESP32-S3 deployment. The current research contract is:
+The project studies how TinyTCN compression affects each gait phase (LR, LS, PSw, Sw) when moving toward ESP32-C3 deployment. The current research contract is:
 
 - 12-channel bilateral shank IMU input
 - 100 Hz evaluation only
 - 0.5 s causal windows
 - subject-wise split: 24 train / 5 validation / 6 test
 - PyTorch-first compression evaluation for accuracy and phase degradation
-- ESP32-S3 measurements only after hardware benchmarking
+- ESP32-C3 on-device latency and SRAM measured for all four deployable TFLite configs
 
 ## Layout
 
@@ -47,6 +47,6 @@ If `experiments/tinytcn/runs/fp32_100hz/best_model.pt` is missing, train FP32 mo
 
 - TinyTCN + baselines: shared training runner implemented; retrain all models with `experiments/scripts/train_all_colab.sh`.
 - Compression: runner for INT8, Prune50, INT8+Prune50; metrics in `experiments/compression/manifest.json`.
-- ESP32-C3: all four deployable TFLite configs measured; ESP32-S3 pending.
+- ESP32-C3: all four deployable TFLite configs measured (`experiments/esp32/benchmarks/esp32_c3_metrics.json`).
 
 See `docs/PROTOCOL.md`, `EVALUATION.md`, and `PAPER_TABLES.md`.

@@ -158,9 +158,8 @@ python analysis/plot_training.py
 1. **Report both macro F1 and phase-specific F1** — gait phases are imbalanced (LS/Sw dominate support).
 2. **Distinguish PyTorch compression metrics from TFLite deployment size** — Table 3 includes both estimated payload and measured `.tflite` bytes.
 3. **Hardware table must state board, CPU freq, trials, and arena size** — already captured in Table 5 header.
-4. **ESP32-C3 vs ESP32-S3** — abstract targets S3; C3 results demonstrate budget-tier feasibility; add S3 when measured.
-5. **Real-time budget** — define per deployment stride (e.g. 50 ms for stride-5 @ 100 Hz), not an arbitrary single threshold.
-6. **Pending placeholders for paper only:** ESP32-S3 latency, optional power (mW) from current draw.
+4. **Real-time budget** — define per deployment stride (e.g. 50 ms for stride-5 @ 100 Hz); INT8+Prune50 mean latency is 69.4 ms on ESP32-C3.
+5. **Pending placeholders for paper only:** optional power (mW) from current draw.
 
 Deployable MCU configs in scope: **FP32, INT8, Prune50, INT8+Prune50** (see `experiments/esp32/README.md`).
 

@@ -152,8 +152,8 @@ INT8 may differ slightly from PyTorch FP32 logits; smoke test passes on **matchi
 
 - PyTorch compression metrics (`experiments/compression/manifest.json`) measure **accuracy**; this folder measures **on-device latency/SRAM**.
 - `INT8` / `INT8+Prune50` TFLite exports use **full-integer PTQ** from float weights, not the PyTorch QDQ proxy checkpoints.
-- If FP32 float models exhaust SRAM on ESP32-C3, report that only INT8 variants fit and note ESP32-S3 as the deployment target from the paper abstract.
-- Target inference budget: **< 36 ms** per 0.5 s window.
+- If FP32 float models exhaust SRAM on ESP32-C3, report that only INT8 variants fit within the 120 KB tensor arena used here.
+- Practical inference budget on ESP32-C3: INT8+Prune50 $\approx$ 69 ms/window (see `esp32_c3_metrics.json`).
 
 ## Related paths
 

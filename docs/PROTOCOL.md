@@ -6,7 +6,7 @@ This document is the canonical workflow for the paper **Impact of Deep Compressi
 
 When TinyTCN is compressed for microcontroller deployment, do transition phases (LR and PSw) lose more accuracy than steadier phases (LS and Sw)?
 
-The first source of truth is PyTorch evaluation. ESP32-S3 latency, SRAM, and power are reported only after hardware measurement.
+The first source of truth is PyTorch evaluation. ESP32-C3 latency and SRAM are reported only after hardware measurement.
 
 ## Fixed methodology
 
@@ -147,7 +147,7 @@ Outputs:
 - Pareto figure: `paper/figures/pareto_front.pdf`
 - ESP32 table: hardware benchmark logs only, not PyTorch estimates
 
-## ESP32-S3 measurement boundary
+## ESP32-C3 measurement boundary
 
 Do not fill ESP32 latency, SRAM, or power from PyTorch runs. Those values require:
 

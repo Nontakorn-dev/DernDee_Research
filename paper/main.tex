@@ -44,18 +44,18 @@ assessment, and assistive robotics, yet deploying deep learning models on resour
 microcontrollers remains challenging. This study investigates the impact of deep compression
 techniques---post-training INT8 quantization and structured channel pruning---on the
 phase-specific accuracy of a Temporal Convolutional Network (TinyTCN) designed for real-time gait
-phase classification on the ESP32-S3 microcontroller. Using shank-mounted IMU data from the NONAN
+phase classification on the ESP32-C3 microcontroller. Using shank-mounted IMU data from the NONAN
 GaitPrint dataset, subject-wise cross-validation was used to evaluate generalization. We
 systematically apply INT8 post-training quantization and structured channel pruning to
 TinyTCN, quantify \textbf{phase-specific} accuracy degradation (LR, LS, PSw, Sw), and map the
 efficiency--accuracy trade-off via a Pareto front of macro F1-score versus on-device model size (KB).
-On-device evaluation on the ESP32-S3 demonstrates inference latency of \placeholder{X.X}~ms and a
-memory footprint of \placeholder{$\sim$X} KB SRAM for the INT8-quantized and pruned model, well
-within real-time constraints ($<$36~ms).
+On-device evaluation on the ESP32-C3 demonstrates inference latency of 69.4~ms (mean) for the
+INT8-quantized and pruned model with a 120~KB tensor arena and $\sim$156~KB minimum free heap
+remaining during benchmarking.
 \end{abstract}
 
 \noindent\textit{Keywords:} TinyTCN, Deep Compression, Quantization, Pruning, Gait Phase Detection,
-ESP32-S3, Edge AI, Wearable Sensors
+ESP32-C3, Edge AI, Wearable Sensors
 
 \section{Introduction}
 
@@ -72,7 +72,7 @@ Temporal Convolutional Networks (TCNs), which leverage dilated convolutions to c
 temporal dependencies with fewer parameters than recurrent architectures, offer a promising middle
 ground between accuracy and efficiency. A compact variant---referred to here as TinyTCN---can, in
 principle, be further compressed via quantization and pruning to meet the strict memory and latency
-budgets of microcontroller-class hardware such as the ESP32-S3.
+budgets of microcontroller-class hardware such as the ESP32-C3.
 
 While prior work has explored model compression broadly for time-series classification, relatively
 little attention has been paid to \textbf{how compression affects accuracy unevenly across different
@@ -88,7 +88,7 @@ This study addresses this gap by:
   \item Systematically applying INT8 post-training quantization, as well as structured
         channel pruning, and quantifying their impact on \textbf{phase-specific} accuracy and
         F1-score, rather than overall accuracy alone;
-  \item Deploying the compressed models on ESP32-S3 hardware and evaluating real-time feasibility
+  \item Deploying the compressed models on ESP32-C3 hardware and evaluating on-device feasibility
         through inference latency, memory footprint, and estimated power consumption.
 \end{enumerate}
 
@@ -132,13 +132,13 @@ pruning, which often requires specialized sparse-matrix support). Both technique
 studied for image and audio models, but their differential effect across distinct temporal phases of
 a periodic signal---such as gait phases---remains comparatively underexplored.
 
-\subsection{Edge AI Deployment on Microcontrollers (ESP32-S3)}
+\subsection{Edge AI Deployment on Microcontrollers (ESP32-C3)}
 
-The ESP32-S3 is a dual-core microcontroller with vector instruction support for accelerated matrix
-operations, up to 512~KB of SRAM, and optional external PSRAM, making it a popular target for TinyML
-deployment via TensorFlow Lite Micro (TFLM). Several studies have demonstrated real-time inference
-(under tens of milliseconds) for compact CNN and TCN models on ESP32-class hardware, motivating its
-use as the target platform in this study.
+The ESP32-C3 is a single-core RISC-V microcontroller (160~MHz) with approximately 400~KB of SRAM,
+making it a low-cost target for TinyML deployment via TensorFlow Lite Micro (TFLM). Although it lacks
+the vector acceleration available on higher-end Espressif parts, compact INT8 models can still run
+on-device when combined with structured pruning, motivating its use as the deployment platform in this
+study.
 
 \subsection{Research Gap}
 
@@ -196,12 +196,13 @@ pruned), not against external state-of-the-art classifiers.
   \end{tabular}
 \end{table}
 
-\subsection{Hardware Deployment (ESP32-S3)}
+\subsection{Hardware Deployment (ESP32-C3)}
 
 After PyTorch compression evaluation, selected models are converted to TensorFlow Lite (.tflite)
-format and deployed via TensorFlow Lite Micro on an ESP32-S3 development board. On-device inference
-latency is measured per 0.5-second input window, alongside peak SRAM usage and estimated power draw
-(derived from current measurement at fixed supply voltage).
+format and deployed via TensorFlow Lite Micro on an ESP32-C3 development board (160~MHz, Arduino IDE,
+Chirale\_TensorFlowLite). On-device inference latency is measured per 0.5-second input window over
+1000 timed trials (20 warmup invocations), alongside minimum free heap during benchmarking and a
+fixed 120~KB tensor arena.
 
 \subsection{Evaluation Metrics}
 
@@ -209,8 +210,8 @@ latency is measured per 0.5-second input window, alongside peak SRAM usage and e
   \item \textbf{Phase-specific F1-score and accuracy} for LR, LS, PSw, and Sw individually.
   \item \textbf{Pareto analysis:} macro F1-score vs.\ measured or estimated model size (KB) per compression config.
   \item \textbf{Model complexity:} parameter count and payload size.
-  \item \textbf{Real-time performance:} inference latency (ms) and memory footprint (KB SRAM) on
-        ESP32-S3.
+  \item \textbf{On-device performance:} inference latency (ms) and minimum free heap (KB) on
+        ESP32-C3.
   \item \textbf{Efficiency-accuracy trade-off} visualized via a Pareto front across compression
         configurations.
 \end{itemize}
@@ -257,20 +258,20 @@ latency is measured per 0.5-second input window, alongside peak SRAM usage and e
   \end{tabular}
 \end{table}
 
-\subsection{Real-Time Performance on ESP32-S3}
+\subsection{Real-Time Performance on ESP32-C3}
 
 \begin{table}[htbp]
   \centering
-  \caption{Real-time performance on ESP32-S3.}
+  \caption{On-device inference performance on ESP32-C3 (160~MHz, tensor arena 120~KB, 1000 trials).}
   \label{tab:esp32}
-  \begin{tabular}{llccc}
+  \begin{tabular}{lccc}
     \toprule
-    \textbf{Implementation Stage} & \textbf{Hardware} & \textbf{Latency (ms)} & \textbf{Memory (SRAM KB)} & \textbf{Est. Power (mW)} \\
+    \textbf{Config} & \textbf{Latency mean (ms)} & \textbf{TFLite size (KB)} & \textbf{Min free heap (KB)} \\
     \midrule
-    TinyTCN (FP32) & PC/Server & $<$1 & --- & --- \\
-    TinyTCN (FP32) & ESP32-S3 & \placeholder{XX.X} & \placeholder{$\sim$XX} & \placeholder{$\sim$XXX} \\
-    TinyTCN (INT8) & ESP32-S3 & \placeholder{X.X} & \placeholder{$\sim$X} & \placeholder{$\sim$XX} \\
-    TinyTCN (INT8 + Pruned) & ESP32-S3 & \placeholder{Lowest} & \placeholder{Lowest} & \placeholder{Lowest} \\
+    TinyTCN (FP32) & 850.6 & 49.2 & 156 \\
+    TinyTCN (INT8) & 256.8 & 18.9 & 156 \\
+    TinyTCN (Pruned 50\%) & 260.0 & 20.3 & 156 \\
+    TinyTCN (INT8 + Pruned) & 69.4 & 11.6 & 156 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -313,10 +314,9 @@ INT8+Prune50 further reduces payload size at a larger phase-specific F1 cost, es
 
 \subsection{Feasibility for Real-World Wearable Deployment}
 
-Assuming inference latency remains below the real-time threshold (targeted here as $<$36~ms for
-0.5-second windows), the INT8-quantized and pruned TinyTCN variant is expected to be well-suited for
-deployment on low-cost ESP32-S3-based wearable devices, supporting continuous, real-time gait phase
-monitoring without reliance on cloud connectivity.
+At approximately 69~ms per window, the INT8-quantized and pruned TinyTCN variant is suitable for
+coaching and logging use cases on low-cost ESP32-C3-based wearables when inference is scheduled every
+50--100~ms, though it does not meet a strict 100~Hz (10~ms) streaming budget.
 
 \subsection{Limitations}
 
@@ -325,7 +325,8 @@ monitoring without reliance on cloud connectivity.
         populations, walking speeds, or pathological gait patterns requires further validation.
   \item Power consumption estimates are derived from current measurement under controlled conditions
         and may vary with real-world duty cycling and radio activity.
-  \item On-device results reported here use ESP32-C3; ESP32-S3 measurements remain future work for the paper's primary deployment target.
+  \item On-device latency uses TFLite Micro reference kernels on ESP32-C3; power (mW) was not measured
+        in this study.
 \end{itemize}
 
 \section{Conclusion}
@@ -337,9 +338,9 @@ and structured pruning---affect phase-specific accuracy in a compact Temporal Co
 phases rather than relying on overall accuracy alone, this work highlights that transition phases
 such as Loading Response and Pre-Swing are likely the most sensitive to aggressive compression, an
 insight with direct relevance for clinical and fall-risk-related applications where these phases
-carry particular significance. Deployment results on the ESP32-S3 microcontroller demonstrate that
-compressed TinyTCN variants can meet real-time latency and memory constraints, supporting their
-practical use in low-cost, real-time wearable gait monitoring systems. Future work should extend
+carry particular significance. Deployment results on the ESP32-C3 microcontroller show that the
+INT8+Prune50 variant achieves $\sim$69~ms inference latency while fitting within available SRAM,
+supporting practical use in low-cost wearable gait monitoring systems. Future work should extend
 this analysis to additional datasets, pathological gait patterns, and on-device continual learning
 scenarios.
 
@@ -362,7 +363,7 @@ scenarios.
   \item David, R., et al. (2021). TensorFlow Lite Micro: Embedded machine learning for TinyML
         systems. \textit{MLSys}.
   \item [Dataset authors]. NONAN GaitPrint Dataset. \textit{[Source/Repository]}.
-  \item Espressif Systems. (Year). ESP32-S3 Technical Reference Manual. \textit{Espressif Systems}.
+  \item Espressif Systems. (Year). ESP32-C3 Technical Reference Manual. \textit{Espressif Systems}.
 \end{enumerate}
 
 \end{document}
