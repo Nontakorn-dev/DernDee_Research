@@ -29,8 +29,8 @@ constexpr int kOutputClasses = 4;
 
 alignas(16) uint8_t tensor_arena[TENSOR_ARENA_SIZE];
 
-MicroMutableOpResolver<12> build_resolver() {
-  MicroMutableOpResolver<12> resolver;
+tflite::MicroMutableOpResolver<12> build_resolver() {
+  tflite::MicroMutableOpResolver<12> resolver;
   resolver.AddConv2D();
   resolver.AddFullyConnected();
   resolver.AddMean();
@@ -144,7 +144,7 @@ void setup() {
     while (true) delay(1000);
   }
 
-  static MicroMutableOpResolver<12> resolver = build_resolver();
+  static tflite::MicroMutableOpResolver<12> resolver = build_resolver();
   static tflite::MicroInterpreter interpreter(model, resolver, tensor_arena, TENSOR_ARENA_SIZE);
   if (interpreter.AllocateTensors() != kTfLiteOk) {
     Serial.println("AllocateTensors failed. Increase TENSOR_ARENA_SIZE in benchmark_config.h.");

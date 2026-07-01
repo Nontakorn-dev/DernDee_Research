@@ -173,7 +173,11 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--configs", nargs="+", default=list(EXPORT_CONFIGS), choices=EXPORT_CONFIGS)
     p.add_argument("--exports-dir", type=Path, default=ESP32_DIR / "exports")
-    p.add_argument("--arduino-dir", type=Path, default=ESP32_DIR / "arduino" / "tinytcn_benchmark")
+    p.add_argument(
+        "--arduino-dir",
+        type=Path,
+        default=ESP32_DIR / "arduino" / "tinytcn_benchmark" / "tinytcn_benchmark",
+    )
     p.add_argument("--norm-stats", type=Path, default=TINYTCN_RUNS / "fp32_100hz" / "norm_stats.json")
     p.add_argument("--checkpoint", type=Path, default=TINYTCN_RUNS / "fp32_100hz" / "best_model.pt")
     p.add_argument("--data-root", type=Path, default=DATA_XY)

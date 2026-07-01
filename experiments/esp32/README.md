@@ -39,13 +39,15 @@ Manual steps:
 | CPU frequency | 160 MHz (default) |
 | Flash size | Match your module (e.g. 4 MB) |
 | Partition scheme | Default |
-| Library | **Arduino_TensorFlowLite** (Library Manager) |
+| Library | **Chirale_TensorFlowLite** (Library Manager) |
 
 Open sketch:
 
 ```
-experiments/esp32/arduino/tinytcn_benchmark/tinytcn_benchmark.ino
+experiments/esp32/arduino/tinytcn_benchmark/tinytcn_benchmark/tinytcn_benchmark.ino
 ```
+
+Arduino IDE requires the sketch folder name to match the `.ino` filename (nested `tinytcn_benchmark/` subfolder). Run `export_all.sh` to regenerate headers into that same folder.
 
 ### Switch compression config
 
@@ -161,7 +163,7 @@ INT8 may differ slightly from PyTorch FP32 logits; smoke test passes on **matchi
 | `experiments/esp32/scripts/export_tflite.py` | PyTorch → ONNX → TFLite |
 | `experiments/esp32/scripts/export_headers.py` | C headers for firmware |
 | `experiments/esp32/scripts/validate_tflite.py` | Host smoke test |
-| `experiments/esp32/arduino/tinytcn_benchmark/` | Benchmark sketch |
+| `experiments/esp32/arduino/tinytcn_benchmark/tinytcn_benchmark/` | Benchmark sketch |
 | `experiments/esp32/benchmarks/esp32_c3_metrics.json` | Hardware results template |
 | `experiments/compression/manifest.json` | Accuracy / size source of truth |
 
