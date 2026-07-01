@@ -29,17 +29,15 @@ constexpr int kOutputClasses = 4;
 
 alignas(16) uint8_t tensor_arena[TENSOR_ARENA_SIZE];
 
-tflite::MicroMutableOpResolver<12> build_resolver() {
-  tflite::MicroMutableOpResolver<12> resolver;
-  resolver.AddConv2D();
-  resolver.AddFullyConnected();
-  resolver.AddMean();
-  resolver.AddAdd();
-  resolver.AddRelu();
+tflite::MicroMutableOpResolver<7> build_resolver() {
+  tflite::MicroMutableOpResolver<7> resolver;
+  resolver.AddTranspose();
   resolver.AddReshape();
   resolver.AddPad();
-  resolver.AddQuantize();
-  resolver.AddDequantize();
+  resolver.AddConv2D();
+  resolver.AddAdd();
+  resolver.AddMean();
+  resolver.AddFullyConnected();
   return resolver;
 }
 
@@ -123,13 +121,13 @@ uint32_t percentile_us(uint32_t* samples, int count, float pct) {
 }  // namespace
 
 void setup() {
+  // ESP32-C3: USB Serial needs time to enumerate; do not block on Serial.
   Serial.begin(115200);
-  while (!Serial && millis() < 3000) {
-    delay(10);
-  }
-  delay(500);
-
+  delay(3000);
   Serial.println();
+  Serial.println("# boot ok");
+  Serial.flush();
+
   Serial.println("# TinyTCN synthetic benchmark");
   Serial.print("# config=");
   Serial.println(MODEL_CONFIG);
@@ -144,7 +142,7 @@ void setup() {
     while (true) delay(1000);
   }
 
-  static tflite::MicroMutableOpResolver<12> resolver = build_resolver();
+  static tflite::MicroMutableOpResolver<7> resolver = build_resolver();
   static tflite::MicroInterpreter interpreter(model, resolver, tensor_arena, TENSOR_ARENA_SIZE);
   if (interpreter.AllocateTensors() != kTfLiteOk) {
     Serial.println("AllocateTensors failed. Increase TENSOR_ARENA_SIZE in benchmark_config.h.");
@@ -192,6 +190,9 @@ void setup() {
     Serial.print(ESP.getFreeHeap());
     Serial.print(",");
     Serial.println(ESP.getMinFreeHeap());
+    if ((trial % 100) == 0) {
+      Serial.flush();
+    }
   }
 
   const int pred = argmax_output(output);
@@ -218,5 +219,8 @@ void setup() {
 }
 
 void loop() {
+  // Heartbeat if setup finished; press RESET to re-run benchmark.
+  Serial.println("# idle (press RESET to rerun benchmark)");
+  Serial.flush();
   delay(10000);
 }
