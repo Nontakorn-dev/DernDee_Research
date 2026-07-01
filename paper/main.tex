@@ -211,18 +211,20 @@ overall data flow and the internal structure of each causal convolutional block.
         text width=1.35cm, minimum height=0.62cm, align=center, font=\tiny},
       sum/.style={circle, draw, thick, fill=orange!12, minimum size=0.42cm, font=\tiny},
       arr/.style={thick, -{Latex[length=1.5mm]}},
-      darr/.style={thick, dashed, -{Latex[length=1.5mm]}},
-      panel/.style={draw, dashed, thick, inner sep=0.12cm, rounded corners}
+      darr/.style={thick, dashed, draw=gray!55!black, dash pattern=on 3pt off 2pt,
+        -{Latex[length=1.5mm]}},
+      panel/.style={draw, dashed, draw=gray!45!black, dash pattern=on 3.5pt off 2.5pt,
+        thick, inner sep=0.22cm, rounded corners}
     ]
 
     % --- (a) Vertical inference pipeline ---
     \node[io] (input) {Input\\$50{\times}12$};
-    \node[block, below=0.14cm of input] (b1) {Block 1\\$12{\to}32$, $k{=}5$, $d{=}1$};
-    \node[block, below=0.14cm of b1] (b2) {Block 2\\$32{\to}32$, $k{=}5$, $d{=}2$};
-    \node[block, below=0.14cm of b2] (b3) {Block 3\\$32{\to}32$, $k{=}3$, $d{=}4$};
-    \node[block, below=0.14cm of b3] (gap) {Global\\Avg.\ Pool};
-    \node[block, below=0.14cm of gap] (fc) {Dense\\$32{\to}4$};
-    \node[io, below=0.14cm of fc] (out) {Softmax\\LR/LS/PSw/Sw};
+    \node[block, below=0.18cm of input] (b1) {Block 1\\$12{\to}32$, $k{=}5$, $d{=}1$};
+    \node[block, below=0.18cm of b1] (b2) {Block 2\\$32{\to}32$, $k{=}5$, $d{=}2$};
+    \node[block, below=0.18cm of b2] (b3) {Block 3\\$32{\to}32$, $k{=}3$, $d{=}4$};
+    \node[block, below=0.18cm of b3] (gap) {Global\\Avg.\ Pool};
+    \node[block, below=0.18cm of gap] (fc) {Dense\\$32{\to}4$};
+    \node[io, below=0.18cm of fc] (out) {Softmax\\LR/LS/PSw/Sw};
 
     \draw[arr] (input) -- (b1);
     \draw[arr] (b1) -- (b2);
@@ -231,18 +233,19 @@ overall data flow and the internal structure of each causal convolutional block.
     \draw[arr] (gap) -- (fc);
     \draw[arr] (fc) -- (out);
 
-    \node[panel, fit=(input)(out), label={[font=\scriptsize\itshape]above:(a) Inference pipeline}] (pipebox) {};
+    \node[panel, fit=(input)(out),
+      label={[font=\scriptsize\itshape, yshift=2pt]above:(a) Inference pipeline}] (pipebox) {};
 
     % --- (b) Causal conv block detail (right panel) ---
-    \begin{scope}[xshift=3.35cm, yshift=-0.15cm]
+    \begin{scope}[xshift=3.85cm, yshift=-0.1cm]
       \node[sblock] (bin) {Block\\Input};
-      \node[sblock, below=0.12cm of bin] (pad) {Causal Pad\\$(k{-}1)d$ left};
-      \node[sblock, below=0.12cm of pad] (conv) {Conv1D\\$k$, $d$};
-      \node[sblock, below=0.12cm of conv] (bn) {BatchNorm};
-      \node[sblock, below=0.12cm of bn] (relu) {ReLU};
-      \node[sum, below=0.12cm of relu] (add) {$+$};
-      \node[sblock, below=0.12cm of add] (bout) {Block\\Output};
-      \node[sblock, right=0.22cm of conv] (resid) {$1{\times}1$ Conv\\if $C_{in}{\neq}C_{out}$};
+      \node[sblock, below=0.16cm of bin] (pad) {Causal Pad\\$(k{-}1)d$ left};
+      \node[sblock, below=0.16cm of pad] (conv) {Conv1D\\$k$, $d$};
+      \node[sblock, below=0.16cm of conv] (bn) {BatchNorm};
+      \node[sblock, below=0.16cm of bn] (relu) {ReLU};
+      \node[sum, below=0.16cm of relu] (add) {$+$};
+      \node[sblock, below=0.16cm of add] (bout) {Block\\Output};
+      \node[sblock, right=0.32cm of conv] (resid) {$1{\times}1$ Conv\\if $C_{in}{\neq}C_{out}$};
 
       \draw[arr] (bin) -- (pad);
       \draw[arr] (pad) -- (conv);
@@ -254,10 +257,12 @@ overall data flow and the internal structure of each causal convolutional block.
       \draw[arr] (resid.south) |- (add.east);
 
       \node[panel, fit=(bin)(bout)(resid),
-        label={[font=\scriptsize\itshape]above:(b) Causal conv block}] (detailbox) {};
+        label={[font=\scriptsize\itshape, yshift=2pt]above:(b) Causal conv block}] (detailbox) {};
     \end{scope}
 
-    \draw[darr] (b2.east) -- ++(0.18cm,0) |- ($(detailbox.west)+(0,0.35cm)$);
+    \coordinate (linkmid) at ($(pipebox.east)!0.42!(detailbox.west)$);
+    \draw[darr] (b2.east) -- ($(linkmid |- b2.east)+(0,0)$);
+    \draw[darr] (linkmid |- b2.east) -- (detailbox.west |- b2.east);
   \end{tikzpicture}
   \caption{TinyTCN architecture: (a) end-to-end pipeline from a $50{\times}12$ causal window to
   a 4-class softmax, and (b) internal structure of each causal convolutional block (left-padding,
@@ -273,22 +278,20 @@ retrained under an identical protocol (Table~\ref{tab:baseline}).
 
 \subsection{Deep Compression Protocol}
 
-\textbf{Post-training quantization.} For an $b$-bit target (INT8: $b=8$), each convolutional and
-fully connected weight tensor $W$ is quantized symmetrically per tensor with scale
-$s = \max(|W|)/(2^{b-1}-1)$ and quantize-dequantize (QDQ) reconstruction
-$\hat{W} = s \cdot \mathrm{clip}(\mathrm{round}(W/s),\, q_{\min},\, q_{\max})$,
-where $q_{\min}=-(2^{b-1}-1)$ and $q_{\max}=2^{b-1}-1$. This QDQ proxy is used for PyTorch-side
-test-set evaluation (Section~\ref{sec:results}); ESP32 deployment instead uses TFLite's full-integer
-post-training quantization on the exported graph.
+\textbf{Post-training quantization (INT8).} We apply symmetric 8-bit quantization separately to
+each convolutional and fully connected weight layer. For every layer, a single scale is set from
+that layer's largest absolute weight; each weight is rounded to the nearest integer in
+$[-127,127]$, then mapped back to floating point for inference. This quantize--dequantize (QDQ)
+proxy is used for PyTorch-side test-set evaluation (Section~\ref{sec:results}). For ESP32
+deployment, models are exported as full-integer TensorFlow Lite graphs using TFLite's built-in
+post-training quantization.
 
-\textbf{Structured channel pruning.} For a hidden width $H=32$, each output (hidden) channel
-$j \in \{1,\ldots,H\}$ is scored by its aggregate $\ell_1$ weight magnitude
-$I_j = \sum_{l=1}^{3} \sum_{i,k} |W^{(l)}_{j,i,k}|$ across all three convolutional layers in the
-stem, where $i$ and $k$ index input channels and kernel taps, respectively. The top
-$\lfloor 0.5 H \rfloor = 16$ channels by $I_j$ are retained (Prune50), the remaining rows/columns
-are removed from every stem layer and the classification head, and the pruned model is fine-tuned
-for 5 epochs (Adam, $\mathrm{lr}=10^{-4}$) using the same class-balanced loss
-(Eq.~\ref{eq:loss}) before re-evaluation.
+\textbf{Structured channel pruning (Prune50).} TinyTCN uses 32 hidden channels in its convolutional
+stem. Each channel is ranked by the total absolute weight magnitude summed over all three stem
+convolutional blocks; the 16 highest-ranked channels are retained and the rest are removed from
+every stem layer and from the classification head. The pruned model is fine-tuned for 5 epochs
+(Adam, learning rate $10^{-4}$) with the same class-balanced loss (Eq.~\ref{eq:loss}) before
+re-evaluation.
 
 Table~\ref{tab:compression} summarizes the compression techniques applied to TinyTCN.
 
@@ -342,7 +345,7 @@ majority phases despite their $\sim\!6\%$ and $\sim\!5\%$ test-set support, resp
 Table~\ref{tab:baseline} compares TinyTCN against four FP32 baselines trained under an identical
 protocol (12-channel bilateral shank IMU, 100~Hz, subject-wise split). TinyTCN achieves the highest
 test macro F1 (91.50\%) while remaining the smallest full-precision model among the compared
-architectures except CNN1D. Per-phase F1 (rightmost four columns) shows this advantage is not
+architectures except CNN1D. The per-phase F1 rows in Table~\ref{tab:baseline} show this advantage is not
 uniform across phases: Transformer attains the highest F1 on LS and PSw, and LSTM+GRU on LR, while
 TinyTCN leads only on Sw---indicating that TinyTCN's overall macro F1 advantage stems from a more
 balanced profile rather than dominance on any single phase.
@@ -351,33 +354,26 @@ balanced profile rather than dominance on any single phase.
   \caption{Baseline Comparison on the Held-Out Test Split (FP32, Fair Training Protocol)}
   \label{tab:baseline}
   \centering
-  \footnotesize
-  \textit{Complexity and Overall Performance}\\[2pt]
-  \begin{tabular}{@{}lcccc@{}}
+  \scriptsize
+  \setlength{\tabcolsep}{2.5pt}
+  \renewcommand{\arraystretch}{1.12}
+  \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lccccc@{}}
     \toprule
-    \textbf{Model} & \textbf{Params} & \textbf{Size (KB)} & \textbf{Acc.\ (\%)} & \textbf{Macro F1 (\%)} \\
+    & \textbf{TinyTCN} & \textbf{Trans.} & \textbf{LSTM+GRU} & \textbf{TCN} & \textbf{CNN1D} \\
     \midrule
-    \textbf{TinyTCN (Ours)} & 10,948 & 42.8 & \textbf{96.30} & \textbf{91.50} \\
-    Transformer & 25,956 & 101.4 & 96.38 & 91.73 \\
-    LSTM+GRU & 12,356 & 48.3 & 96.25 & 91.38 \\
-    TCN & 11,560 & 45.2 & 96.04 & 90.96 \\
-    CNN1D & 10,727 & 41.9 & 95.58 & 90.23 \\
-    \bottomrule
-  \end{tabular}
-  \vspace{5pt}
-
-  \textit{Phase-Specific F1 (\%)}\\[2pt]
-  \begin{tabular}{@{}lcccc@{}}
-    \toprule
-    \textbf{Model} & \textbf{LR} & \textbf{LS} & \textbf{PSw} & \textbf{Sw} \\
+    Params & 10,948 & 25,956 & 12,356 & 11,560 & 10,727 \\
+    Size (KB) & 42.8 & 101.4 & 48.3 & 45.2 & 41.9 \\
+    Acc.\ (\%) & \textbf{96.30} & 96.38 & 96.25 & 96.04 & 95.58 \\
+    Macro F1 (\%) & \textbf{91.50} & 91.73 & 91.38 & 90.96 & 90.23 \\
     \midrule
-    \textbf{TinyTCN (Ours)} & 87.26 & 97.88 & 82.99 & \textbf{97.87} \\
-    Transformer & 87.28 & \textbf{98.07} & \textbf{83.84} & 97.72 \\
-    LSTM+GRU & \textbf{87.85} & 97.91 & 82.00 & 97.78 \\
-    TCN & 86.40 & 97.71 & 82.01 & 97.73 \\
-    CNN1D & 85.77 & 97.54 & 80.29 & 97.34 \\
+    \multicolumn{6}{@{}c@{}}{\textit{Phase-specific F1 (\%)}} \\
+    \midrule
+    LR & 87.26 & 87.28 & \textbf{87.85} & 86.40 & 85.77 \\
+    LS & 97.88 & \textbf{98.07} & 97.91 & 97.71 & 97.54 \\
+    PSw & 82.99 & \textbf{83.84} & 82.00 & 82.01 & 80.29 \\
+    Sw & \textbf{97.87} & 97.72 & 97.78 & 97.73 & 97.34 \\
     \bottomrule
-  \end{tabular}
+  \end{tabular*}
 \end{table}
 
 \subsection{Compression Trade-off and Phase-Specific F1}
@@ -386,7 +382,7 @@ Table~\ref{tab:compression-results} summarizes PyTorch-side compression evaluati
 split, reporting model complexity, exported TFLite size, overall accuracy, and macro/phase-specific
 F1 together. INT8 weight quantization preserved accuracy and macro F1 almost exactly, while
 structured pruning reduced parameter count to 3,428 ($-$68.7\%) at a larger macro F1 cost.
-Exported TFLite sizes (fourth column) were measured for ESP32 deployment. PSw---a brief transition
+Exported TFLite sizes were measured for ESP32 deployment. PSw---a brief transition
 phase---showed the largest F1 degradation under pruning ($-$3.32~pp for Prune50 and $-$3.43~pp for
 INT8+Prune50 relative to FP32), whereas INT8 quantization alone changed each phase F1 by at most
 0.04~pp.
@@ -395,32 +391,27 @@ INT8+Prune50 relative to FP32), whereas INT8 quantization alone changed each pha
   \caption{TinyTCN Compression Results and Phase-Specific F1 on the Test Split}
   \label{tab:compression-results}
   \centering
-  \footnotesize
-  \textit{Complexity, Size, and Overall Performance}\\[2pt]
-  \begin{tabular}{@{}lccccc@{}}
+  \scriptsize
+  \setlength{\tabcolsep}{2.5pt}
+  \renewcommand{\arraystretch}{1.12}
+  \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lcccc@{}}
     \toprule
-    \textbf{Config} & \textbf{Params} & \textbf{Est.} & \textbf{TFLite} & \textbf{Acc.} & \textbf{Macro F1} \\
-    & & \textbf{(KB)} & \textbf{(KB)} & \textbf{(\%)} & \textbf{(\%)} \\
+    & \textbf{FP32} & \textbf{INT8} & \textbf{Prune50} & \textbf{INT8+Prune50} \\
     \midrule
-    FP32 & 10,948 & 42.8 & 49.2 & 96.30 & 91.50 \\
-    INT8 & 10,948 & 12.7 & 18.9 & 96.27 & 91.43 \\
-    Prune50 & 3,428 & 13.4 & 20.3 & 94.74 & 88.73 \\
-    INT8+Prune50 & 3,428 & 5.4 & 11.6 & 94.56 & 88.45 \\
-    \bottomrule
-  \end{tabular}
-  \vspace{5pt}
-
-  \textit{Phase-Specific F1 (\%)}\\[2pt]
-  \begin{tabular}{@{}lcccc@{}}
-    \toprule
-    \textbf{Config} & \textbf{LR} & \textbf{LS} & \textbf{PSw} & \textbf{Sw} \\
+    Params & 10,948 & 10,948 & 3,428 & 3,428 \\
+    Est.\ size (KB) & 42.8 & 12.7 & 13.4 & 5.4 \\
+    TFLite (KB) & 49.2 & 18.9 & 20.3 & 11.6 \\
+    Acc.\ (\%) & \textbf{96.30} & 96.27 & 94.74 & 94.56 \\
+    Macro F1 (\%) & \textbf{91.50} & 91.43 & 88.73 & 88.45 \\
     \midrule
-    FP32 & 87.26 & 97.88 & 82.99 & 97.87 \\
-    INT8 & 87.04 & 97.84 & 82.95 & 97.87 \\
-    Prune50 & 81.32 & 96.88 & 79.67 & 97.03 \\
-    INT8+Prune50 & 80.52 & 96.76 & 79.56 & 96.95 \\
+    \multicolumn{5}{@{}c@{}}{\textit{Phase-specific F1 (\%)}} \\
+    \midrule
+    LR & 87.26 & 87.04 & 81.32 & 80.52 \\
+    LS & 97.88 & 97.84 & 96.88 & 96.76 \\
+    PSw & 82.99 & 82.95 & 79.67 & 79.56 \\
+    Sw & 97.87 & 97.87 & 97.03 & 96.95 \\
     \bottomrule
-  \end{tabular}
+  \end{tabular*}
 \end{table}
 
 \subsection{Phase-Specific Accuracy Under Compression}
