@@ -1,1 +1,277 @@
-{}
+{
+  "FP32": {
+    "name": "FP32",
+    "accuracy": 0.9630070287342086,
+    "macro_f1": 0.9149947102594749,
+    "phase_f1": {
+      "LR": 0.8725983213211578,
+      "LS": 0.9787727392250137,
+      "PSw": 0.8299034127495171,
+      "Sw": 0.9787043677422107
+    },
+    "phase_accuracy": {
+      "LR": 0.9503146933799057,
+      "LS": 0.9637904776700492,
+      "PSw": 0.9167431306859001,
+      "Sw": 0.9703153934132331
+    },
+    "phase_support": {
+      "LR": 151735,
+      "LS": 1274499,
+      "PSw": 140589,
+      "Sw": 1016857
+    },
+    "confusion_matrix": [
+      [
+        144196,
+        5003,
+        0,
+        2536
+      ],
+      [
+        16980,
+        1228350,
+        29085,
+        84
+      ],
+      [
+        4,
+        1568,
+        128884,
+        10133
+      ],
+      [
+        17583,
+        560,
+        12042,
+        986672
+      ]
+    ],
+    "size_kb": 42.77,
+    "file_size_kb": 52.03,
+    "params": 10948,
+    "artifact": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/FP32/model.pt",
+    "method_note": "FP32 checkpoint evaluation",
+    "report": "              precision    recall  f1-score   support\n\n          LR       0.81      0.95      0.87    151735\n          LS       0.99      0.96      0.98   1274499\n         PSw       0.76      0.92      0.83    140589\n          Sw       0.99      0.97      0.98   1016857\n\n    accuracy                           0.96   2583680\n   macro avg       0.89      0.95      0.91   2583680\nweighted avg       0.97      0.96      0.96   2583680\n"
+  },
+  "INT8": {
+    "name": "INT8",
+    "accuracy": 0.9626908131037899,
+    "macro_f1": 0.9142599007829326,
+    "phase_f1": {
+      "LR": 0.8703555311880562,
+      "LS": 0.9784154019539876,
+      "PSw": 0.8295437263587739,
+      "Sw": 0.9787249436309126
+    },
+    "phase_accuracy": {
+      "LR": 0.9520479783833657,
+      "LS": 0.9628355926524854,
+      "PSw": 0.9117640782707039,
+      "Sw": 0.9711385180020397
+    },
+    "phase_support": {
+      "LR": 151735,
+      "LS": 1274499,
+      "PSw": 140589,
+      "Sw": 1016857
+    },
+    "confusion_matrix": [
+      [
+        144459,
+        4681,
+        0,
+        2595
+      ],
+      [
+        18142,
+        1227133,
+        29098,
+        126
+      ],
+      [
+        4,
+        1538,
+        128184,
+        10863
+      ],
+      [
+        17614,
+        558,
+        11176,
+        987509
+      ]
+    ],
+    "size_kb": 12.69,
+    "file_size_kb": 52.09,
+    "params": 10948,
+    "artifact": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/INT8/model.pt",
+    "method_note": "PyTorch weight quantize-dequantize INT8 accuracy proxy",
+    "report": "              precision    recall  f1-score   support\n\n          LR       0.80      0.95      0.87    151735\n          LS       0.99      0.96      0.98   1274499\n         PSw       0.76      0.91      0.83    140589\n          Sw       0.99      0.97      0.98   1016857\n\n    accuracy                           0.96   2583680\n   macro avg       0.89      0.95      0.91   2583680\nweighted avg       0.97      0.96      0.96   2583680\n"
+  },
+  "INT4": {
+    "name": "INT4",
+    "accuracy": 0.9501192098092643,
+    "macro_f1": 0.8976526305667218,
+    "phase_f1": {
+      "LR": 0.8470568495736431,
+      "LS": 0.9674761572121362,
+      "PSw": 0.8098536198684662,
+      "Sw": 0.9662238956126418
+    },
+    "phase_accuracy": {
+      "LR": 0.9315978515174482,
+      "LS": 0.9421615866312959,
+      "PSw": 0.8574924069450668,
+      "Sw": 0.9756632446843558
+    },
+    "phase_support": {
+      "LR": 151735,
+      "LS": 1274499,
+      "PSw": 140589,
+      "Sw": 1016857
+    },
+    "confusion_matrix": [
+      [
+        141356,
+        3508,
+        0,
+        6871
+      ],
+      [
+        24600,
+        1200784,
+        28432,
+        20683
+      ],
+      [
+        4,
+        2970,
+        120554,
+        17061
+      ],
+      [
+        16063,
+        541,
+        8143,
+        992110
+      ]
+    ],
+    "size_kb": 7.35,
+    "file_size_kb": 52.09,
+    "params": 10948,
+    "artifact": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/INT4/model.pt",
+    "method_note": "PyTorch weight quantize-dequantize 4-bit accuracy floor",
+    "report": "              precision    recall  f1-score   support\n\n          LR       0.78      0.93      0.85    151735\n          LS       0.99      0.94      0.97   1274499\n         PSw       0.77      0.86      0.81    140589\n          Sw       0.96      0.98      0.97   1016857\n\n    accuracy                           0.95   2583680\n   macro avg       0.87      0.93      0.90   2583680\nweighted avg       0.95      0.95      0.95   2583680\n"
+  },
+  "Prune50": {
+    "name": "Prune50",
+    "accuracy": 0.9473835769135497,
+    "macro_f1": 0.8872689555924124,
+    "phase_f1": {
+      "LR": 0.8132448071584033,
+      "LS": 0.9688076986282831,
+      "PSw": 0.7967122297826218,
+      "Sw": 0.9703110868003413
+    },
+    "phase_accuracy": {
+      "LR": 0.9739348205753452,
+      "LS": 0.9436201989958407,
+      "PSw": 0.941112035792274,
+      "Sw": 0.9490056123919096
+    },
+    "phase_support": {
+      "LR": 151735,
+      "LS": 1274499,
+      "PSw": 140589,
+      "Sw": 1016857
+    },
+    "confusion_matrix": [
+      [
+        147780,
+        2896,
+        0,
+        1059
+      ],
+      [
+        37547,
+        1202643,
+        34288,
+        21
+      ],
+      [
+        5,
+        2155,
+        132310,
+        6119
+      ],
+      [
+        26366,
+        535,
+        24953,
+        965003
+      ]
+    ],
+    "size_kb": 13.39,
+    "file_size_kb": 22.34,
+    "params": 3428,
+    "artifact": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/Prune50/model.pt",
+    "method_note": "Structured 50% hidden-channel prune with fine-tuning",
+    "report": "              precision    recall  f1-score   support\n\n          LR       0.70      0.97      0.81    151735\n          LS       1.00      0.94      0.97   1274499\n         PSw       0.69      0.94      0.80    140589\n          Sw       0.99      0.95      0.97   1016857\n\n    accuracy                           0.95   2583680\n   macro avg       0.84      0.95      0.89   2583680\nweighted avg       0.96      0.95      0.95   2583680\n"
+  },
+  "INT8+Prune50": {
+    "name": "INT8+Prune50",
+    "accuracy": 0.9456414881099826,
+    "macro_f1": 0.8844546356386098,
+    "phase_f1": {
+      "LR": 0.8051703098544084,
+      "LS": 0.9675906522248626,
+      "PSw": 0.7955861374507007,
+      "Sw": 0.9694714430244673
+    },
+    "phase_accuracy": {
+      "LR": 0.9762414736217748,
+      "LS": 0.9410223154353201,
+      "PSw": 0.9441279189694785,
+      "Sw": 0.9470741707044353
+    },
+    "phase_support": {
+      "LR": 151735,
+      "LS": 1274499,
+      "PSw": 140589,
+      "Sw": 1016857
+    },
+    "confusion_matrix": [
+      [
+        148130,
+        2649,
+        0,
+        956
+      ],
+      [
+        40744,
+        1199332,
+        34402,
+        21
+      ],
+      [
+        5,
+        1993,
+        132734,
+        5857
+      ],
+      [
+        27333,
+        534,
+        25951,
+        963039
+      ]
+    ],
+    "size_kb": 5.35,
+    "file_size_kb": 22.34,
+    "params": 3428,
+    "artifact": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/INT8+Prune50/model.pt",
+    "method_note": "Structured 50% prune with fine-tuning, then INT8 weight quantize-dequantize",
+    "report": "              precision    recall  f1-score   support\n\n          LR       0.69      0.98      0.81    151735\n          LS       1.00      0.94      0.97   1274499\n         PSw       0.69      0.94      0.80    140589\n          Sw       0.99      0.95      0.97   1016857\n\n    accuracy                           0.95   2583680\n   macro avg       0.84      0.95      0.88   2583680\nweighted avg       0.96      0.95      0.95   2583680\n"
+  }
+}

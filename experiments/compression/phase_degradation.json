@@ -1,0 +1,70 @@
+{
+  "metric": "phase_accuracy",
+  "rows": [
+    {
+      "name": "FP32",
+      "macro_f1": 91.5,
+      "accuracy": 96.3,
+      "LR_phase_accuracy": 95.03,
+      "LR_delta_pct": 0.0,
+      "LS_phase_accuracy": 96.38,
+      "LS_delta_pct": 0.0,
+      "PSw_phase_accuracy": 91.67,
+      "PSw_delta_pct": 0.0,
+      "Sw_phase_accuracy": 97.03,
+      "Sw_delta_pct": 0.0
+    },
+    {
+      "name": "INT8",
+      "macro_f1": 91.43,
+      "accuracy": 96.27,
+      "LR_phase_accuracy": 95.2,
+      "LR_delta_pct": 0.17,
+      "LS_phase_accuracy": 96.28,
+      "LS_delta_pct": -0.1,
+      "PSw_phase_accuracy": 91.18,
+      "PSw_delta_pct": -0.5,
+      "Sw_phase_accuracy": 97.11,
+      "Sw_delta_pct": 0.08
+    },
+    {
+      "name": "INT4",
+      "macro_f1": 89.77,
+      "accuracy": 95.01,
+      "LR_phase_accuracy": 93.16,
+      "LR_delta_pct": -1.87,
+      "LS_phase_accuracy": 94.22,
+      "LS_delta_pct": -2.16,
+      "PSw_phase_accuracy": 85.75,
+      "PSw_delta_pct": -5.93,
+      "Sw_phase_accuracy": 97.57,
+      "Sw_delta_pct": 0.53
+    },
+    {
+      "name": "Prune50",
+      "macro_f1": 88.73,
+      "accuracy": 94.74,
+      "LR_phase_accuracy": 97.39,
+      "LR_delta_pct": 2.36,
+      "LS_phase_accuracy": 94.36,
+      "LS_delta_pct": -2.02,
+      "PSw_phase_accuracy": 94.11,
+      "PSw_delta_pct": 2.44,
+      "Sw_phase_accuracy": 94.9,
+      "Sw_delta_pct": -2.13
+    },
+    {
+      "name": "INT8+Prune50",
+      "macro_f1": 88.45,
+      "accuracy": 94.56,
+      "LR_phase_accuracy": 97.62,
+      "LR_delta_pct": 2.59,
+      "LS_phase_accuracy": 94.1,
+      "LS_delta_pct": -2.28,
+      "PSw_phase_accuracy": 94.41,
+      "PSw_delta_pct": 2.74,
+      "Sw_phase_accuracy": 94.71,
+      "Sw_delta_pct": -2.32
+    }
+  ]
+}

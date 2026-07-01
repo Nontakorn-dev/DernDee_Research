@@ -1,0 +1,55 @@
+{
+  "name": "FP32",
+  "accuracy": 0.9630070287342086,
+  "macro_f1": 0.9149947102594749,
+  "phase_f1": {
+    "LR": 0.8725983213211578,
+    "LS": 0.9787727392250137,
+    "PSw": 0.8299034127495171,
+    "Sw": 0.9787043677422107
+  },
+  "phase_accuracy": {
+    "LR": 0.9503146933799057,
+    "LS": 0.9637904776700492,
+    "PSw": 0.9167431306859001,
+    "Sw": 0.9703153934132331
+  },
+  "phase_support": {
+    "LR": 151735,
+    "LS": 1274499,
+    "PSw": 140589,
+    "Sw": 1016857
+  },
+  "confusion_matrix": [
+    [
+      144196,
+      5003,
+      0,
+      2536
+    ],
+    [
+      16980,
+      1228350,
+      29085,
+      84
+    ],
+    [
+      4,
+      1568,
+      128884,
+      10133
+    ],
+    [
+      17583,
+      560,
+      12042,
+      986672
+    ]
+  ],
+  "size_kb": 42.77,
+  "file_size_kb": 52.03,
+  "params": 10948,
+  "artifact": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/FP32/model.pt",
+  "method_note": "FP32 checkpoint evaluation",
+  "report": "              precision    recall  f1-score   support\n\n          LR       0.81      0.95      0.87    151735\n          LS       0.99      0.96      0.98   1274499\n         PSw       0.76      0.92      0.83    140589\n          Sw       0.99      0.97      0.98   1016857\n\n    accuracy                           0.96   2583680\n   macro avg       0.89      0.95      0.91   2583680\nweighted avg       0.97      0.96      0.96   2583680\n"
+}

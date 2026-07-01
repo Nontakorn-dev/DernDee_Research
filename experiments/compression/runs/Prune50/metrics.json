@@ -1,0 +1,55 @@
+{
+  "name": "Prune50",
+  "accuracy": 0.9473835769135497,
+  "macro_f1": 0.8872689555924124,
+  "phase_f1": {
+    "LR": 0.8132448071584033,
+    "LS": 0.9688076986282831,
+    "PSw": 0.7967122297826218,
+    "Sw": 0.9703110868003413
+  },
+  "phase_accuracy": {
+    "LR": 0.9739348205753452,
+    "LS": 0.9436201989958407,
+    "PSw": 0.941112035792274,
+    "Sw": 0.9490056123919096
+  },
+  "phase_support": {
+    "LR": 151735,
+    "LS": 1274499,
+    "PSw": 140589,
+    "Sw": 1016857
+  },
+  "confusion_matrix": [
+    [
+      147780,
+      2896,
+      0,
+      1059
+    ],
+    [
+      37547,
+      1202643,
+      34288,
+      21
+    ],
+    [
+      5,
+      2155,
+      132310,
+      6119
+    ],
+    [
+      26366,
+      535,
+      24953,
+      965003
+    ]
+  ],
+  "size_kb": 13.39,
+  "file_size_kb": 22.34,
+  "params": 3428,
+  "artifact": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/Prune50/model.pt",
+  "method_note": "Structured 50% hidden-channel prune with fine-tuning",
+  "report": "              precision    recall  f1-score   support\n\n          LR       0.70      0.97      0.81    151735\n          LS       1.00      0.94      0.97   1274499\n         PSw       0.69      0.94      0.80    140589\n          Sw       0.99      0.95      0.97   1016857\n\n    accuracy                           0.95   2583680\n   macro avg       0.84      0.95      0.89   2583680\nweighted avg       0.96      0.95      0.95   2583680\n"
+}
