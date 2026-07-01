@@ -148,7 +148,7 @@ def plot_phase_degradation(
         ax_delta.text(
             0.5,
             0.5,
-            "Run compression evaluation to populate\ndegradation bars for INT8 / INT4 / Prune50.",
+            "Run compression evaluation to populate\ndegradation bars for INT8 / Prune50 / INT8+Prune50.",
             ha="center",
             va="center",
             transform=ax_delta.transAxes,

@@ -17,8 +17,8 @@ from analysis.plot_style import ordered_configs
 
 
 def test_ordered_configs_follows_manifest_order() -> None:
-    names = ["INT4", "FP32", "Prune50", "INT8"]
-    assert ordered_configs(names) == ["FP32", "INT8", "INT4", "Prune50"]
+    names = ["Prune50", "FP32", "INT8+Prune50", "INT8"]
+    assert ordered_configs(names) == ["FP32", "INT8", "Prune50", "INT8+Prune50"]
 
 
 def test_phase_values_scale_to_percent() -> None:

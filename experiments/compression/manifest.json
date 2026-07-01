@@ -59,34 +59,6 @@
       "measured": true
     },
     {
-      "name": "INT4",
-      "size_kb": 7.35,
-      "macro_f1": 0.8976526305667218,
-      "accuracy": 0.9501192098092643,
-      "phase_f1": {
-        "LR": 0.8470568495736431,
-        "LS": 0.9674761572121362,
-        "PSw": 0.8098536198684662,
-        "Sw": 0.9662238956126418
-      },
-      "phase_accuracy": {
-        "LR": 0.9315978515174482,
-        "LS": 0.9421615866312959,
-        "PSw": 0.8574924069450668,
-        "Sw": 0.9756632446843558
-      },
-      "phase_support": {
-        "LR": 151735,
-        "LS": 1274499,
-        "PSw": 140589,
-        "Sw": 1016857
-      },
-      "params": 10948,
-      "note": "PyTorch weight quantize-dequantize 4-bit accuracy floor",
-      "artifact": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/INT4/model.pt",
-      "measured": true
-    },
-    {
       "name": "Prune50",
       "size_kb": 13.39,
       "macro_f1": 0.8872689555924124,

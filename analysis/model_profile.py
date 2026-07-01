@@ -45,11 +45,9 @@ def load_tinytcn_from_checkpoint(path: Path) -> TinyTCN:
 def estimate_sizes(params: int) -> list[SizeEstimate]:
     fp32 = params * 4 / 1024
     int8 = params * 1 / 1024 + 2.0
-    int4 = params * 0.5 / 1024 + 2.0
     return [
         SizeEstimate("FP32", params, round(fp32, 2), "full-precision weights"),
         SizeEstimate("INT8", params, round(int8, 2), "post-training INT8"),
-        SizeEstimate("INT4", params, round(int4, 2), "4-bit quantization"),
         SizeEstimate("Prune50", params // 2, round(fp32 * 0.5, 2), "50% channel prune"),
         SizeEstimate("INT8+Prune50", params // 2, round(int8 * 0.5, 2), "INT8 after prune"),
     ]

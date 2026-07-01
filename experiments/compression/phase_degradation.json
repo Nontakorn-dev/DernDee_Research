@@ -28,19 +28,6 @@
       "Sw_delta_pct": 0.08
     },
     {
-      "name": "INT4",
-      "macro_f1": 89.77,
-      "accuracy": 95.01,
-      "LR_phase_accuracy": 93.16,
-      "LR_delta_pct": -1.87,
-      "LS_phase_accuracy": 94.22,
-      "LS_delta_pct": -2.16,
-      "PSw_phase_accuracy": 85.75,
-      "PSw_delta_pct": -5.93,
-      "Sw_phase_accuracy": 97.57,
-      "Sw_delta_pct": 0.53
-    },
-    {
       "name": "Prune50",
       "macro_f1": 88.73,
       "accuracy": 94.74,

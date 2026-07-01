@@ -43,7 +43,7 @@ from paths import COMPRESSION_RESULTS, DATA_XY, SHARED_SPLITS, TINYTCN_RUNS  # n
 from training import make_loader, pick_device  # noqa: E402
 
 
-CONFIGS = ("FP32", "INT8", "INT4", "Prune50", "INT8+Prune50")
+CONFIGS = ("FP32", "INT8", "Prune50", "INT8+Prune50")
 
 
 def count_parameters(model: nn.Module) -> int:
@@ -218,13 +218,6 @@ def build_config_model(
             copy.deepcopy(ckpt),
             8,
             "PyTorch weight quantize-dequantize INT8 accuracy proxy",
-        )
-    if name == "INT4":
-        return (
-            quantize_dequantize_weights(fp32_model, bits=4),
-            copy.deepcopy(ckpt),
-            4,
-            "PyTorch weight quantize-dequantize 4-bit accuracy floor",
         )
     if name == "Prune50":
         model = prune_tinytcn_hidden(fp32_model, keep_ratio=0.5)

@@ -7,12 +7,11 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 PHASES = ("LR", "LS", "PSw", "Sw")
-CONFIG_ORDER = ("FP32", "INT8", "INT4", "Prune50", "INT8+Prune50")
+CONFIG_ORDER = ("FP32", "INT8", "Prune50", "INT8+Prune50")
 
 CONFIG_COLORS = {
     "FP32": "#2563eb",
     "INT8": "#059669",
-    "INT4": "#d97706",
     "Prune50": "#7c3aed",
     "INT8+Prune50": "#dc2626",
 }

@@ -109,61 +109,6 @@
     "method_note": "PyTorch weight quantize-dequantize INT8 accuracy proxy",
     "report": "              precision    recall  f1-score   support\n\n          LR       0.80      0.95      0.87    151735\n          LS       0.99      0.96      0.98   1274499\n         PSw       0.76      0.91      0.83    140589\n          Sw       0.99      0.97      0.98   1016857\n\n    accuracy                           0.96   2583680\n   macro avg       0.89      0.95      0.91   2583680\nweighted avg       0.97      0.96      0.96   2583680\n"
   },
-  "INT4": {
-    "name": "INT4",
-    "accuracy": 0.9501192098092643,
-    "macro_f1": 0.8976526305667218,
-    "phase_f1": {
-      "LR": 0.8470568495736431,
-      "LS": 0.9674761572121362,
-      "PSw": 0.8098536198684662,
-      "Sw": 0.9662238956126418
-    },
-    "phase_accuracy": {
-      "LR": 0.9315978515174482,
-      "LS": 0.9421615866312959,
-      "PSw": 0.8574924069450668,
-      "Sw": 0.9756632446843558
-    },
-    "phase_support": {
-      "LR": 151735,
-      "LS": 1274499,
-      "PSw": 140589,
-      "Sw": 1016857
-    },
-    "confusion_matrix": [
-      [
-        141356,
-        3508,
-        0,
-        6871
-      ],
-      [
-        24600,
-        1200784,
-        28432,
-        20683
-      ],
-      [
-        4,
-        2970,
-        120554,
-        17061
-      ],
-      [
-        16063,
-        541,
-        8143,
-        992110
-      ]
-    ],
-    "size_kb": 7.35,
-    "file_size_kb": 52.09,
-    "params": 10948,
-    "artifact": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/INT4/model.pt",
-    "method_note": "PyTorch weight quantize-dequantize 4-bit accuracy floor",
-    "report": "              precision    recall  f1-score   support\n\n          LR       0.78      0.93      0.85    151735\n          LS       0.99      0.94      0.97   1274499\n         PSw       0.77      0.86      0.81    140589\n          Sw       0.96      0.98      0.97   1016857\n\n    accuracy                           0.95   2583680\n   macro avg       0.87      0.93      0.90   2583680\nweighted avg       0.95      0.95      0.95   2583680\n"
-  },
   "Prune50": {
     "name": "Prune50",
     "accuracy": 0.9473835769135497,

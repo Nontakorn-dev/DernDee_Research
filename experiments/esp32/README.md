@@ -5,8 +5,7 @@ The sketch replays one fixed `(50, 12)` window, normalizes with training stats, 
 runs TFLite Micro inference in a tight loop.
 
 Primary configs: `INT8`, `INT8+Prune50`  
-Comparison (if SRAM allows): `FP32`, `Prune50`  
-Skipped: `INT4` (PyTorch accuracy floor only; TFLite Micro on ESP32 targets float32/int8)
+Comparison (if SRAM allows): `FP32`, `Prune50`
 
 ## Pipeline
 

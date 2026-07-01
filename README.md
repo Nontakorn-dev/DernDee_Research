@@ -46,7 +46,7 @@ If `experiments/tinytcn/runs/fp32_100hz/best_model.pt` is missing, train FP32 mo
 ## Status
 
 - TinyTCN + baselines: shared training runner implemented; retrain all models with `experiments/scripts/train_all_colab.sh`.
-- Compression: runner for INT8, INT4, Prune50, INT8+Prune50; metrics pending fresh FP32 checkpoint.
-- ESP32-S3: benchmark protocol documented; latency/SRAM/power require hardware measurement.
+- Compression: runner for INT8, Prune50, INT8+Prune50; metrics in `experiments/compression/manifest.json`.
+- ESP32-C3: all four deployable TFLite configs measured; ESP32-S3 pending.
 
 See `docs/PROTOCOL.md`, `EVALUATION.md`, and `PAPER_TABLES.md`.

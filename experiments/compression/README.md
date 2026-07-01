@@ -1,8 +1,8 @@
 # Compression experiments
 
-PyTorch-first INT8, 4-bit simulation, and structured pruning experiments for TinyTCN.
+PyTorch-first INT8 quantization proxy and structured pruning experiments for TinyTCN.
 
-The purpose of this folder is to measure **phase-specific accuracy degradation** before any ESP32 deployment work. INT8 and INT4 here are PyTorch quantize-dequantize accuracy proxies unless a later export step explicitly says otherwise.
+The purpose of this folder is to measure **phase-specific accuracy degradation** before any ESP32 deployment work. INT8 here is a PyTorch quantize-dequantize accuracy proxy unless a later export step explicitly says otherwise.
 
 ## Status
 
@@ -11,10 +11,9 @@ The purpose of this folder is to measure **phase-specific accuracy degradation**
 | Pareto manifest + plot | `scripts/plot_pareto.sh` | Ready |
 | Per-config PyTorch eval | `run_eval.py` | Ready |
 | INT8 accuracy proxy | `run_eval.py --configs INT8` | Ready |
-| INT4 accuracy floor | `run_eval.py --configs INT4` | Ready |
 | Structured Prune50 | `run_eval.py --configs Prune50` | Ready |
 | INT8+Prune50 | `run_eval.py --configs INT8+Prune50` | Ready |
-| TFLite/ESP32 export | `../esp32/README.md` | TODO |
+| TFLite/ESP32 export | `../esp32/README.md` | Ready |
 
 ## Run compression evaluation
 
@@ -29,6 +28,8 @@ This requires:
 - `shared/splits/subject_split.csv`
 - `dataset/Xy`
 
+Configs: **FP32**, **INT8**, **Prune50**, **INT8+Prune50**
+
 Outputs:
 
 ```
@@ -36,7 +37,6 @@ experiments/compression/
 ├── runs/
 │   ├── FP32/metrics.json
 │   ├── INT8/metrics.json
-│   ├── INT4/metrics.json
 │   ├── Prune50/metrics.json
 │   └── INT8+Prune50/metrics.json
 ├── results/metrics.json

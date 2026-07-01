@@ -104,7 +104,6 @@ Configs:
 
 - `FP32`: baseline checkpoint evaluation
 - `INT8`: PyTorch weight quantize-dequantize accuracy proxy
-- `INT4`: PyTorch 4-bit weight quantize-dequantize accuracy floor
 - `Prune50`: structured 50% hidden-channel pruning with fine-tuning
 - `INT8+Prune50`: Prune50 with fine-tuning, then INT8 proxy
 

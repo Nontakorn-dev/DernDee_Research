@@ -77,7 +77,6 @@ This evaluates:
 
 - FP32
 - INT8 weight quantize-dequantize proxy
-- INT4 weight quantize-dequantize simulation
 - Prune50 structured hidden-channel pruning with fine-tuning
 - INT8+Prune50
 

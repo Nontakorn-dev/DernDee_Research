@@ -42,11 +42,11 @@ in TinyTCN for Real-Time Gait Detection}
 Wearable-based gait phase detection is a critical enabler for rehabilitation monitoring, fall-risk
 assessment, and assistive robotics, yet deploying deep learning models on resource-constrained
 microcontrollers remains challenging. This study investigates the impact of deep compression
-techniques---post-training quantization (INT8, 4-bit) and structured channel pruning---on the
+techniques---post-training INT8 quantization and structured channel pruning---on the
 phase-specific accuracy of a Temporal Convolutional Network (TinyTCN) designed for real-time gait
 phase classification on the ESP32-S3 microcontroller. Using shank-mounted IMU data from the NONAN
 GaitPrint dataset, subject-wise cross-validation was used to evaluate generalization. We
-systematically apply post-training quantization (INT8, 4-bit) and structured channel pruning to
+systematically apply INT8 post-training quantization and structured channel pruning to
 TinyTCN, quantify \textbf{phase-specific} accuracy degradation (LR, LS, PSw, Sw), and map the
 efficiency--accuracy trade-off via a Pareto front of macro F1-score versus on-device model size (KB).
 On-device evaluation on the ESP32-S3 demonstrates inference latency of \placeholder{X.X}~ms and a
@@ -85,7 +85,7 @@ This study addresses this gap by:
 \begin{enumerate}
   \item Designing and training a TinyTCN architecture for gait phase classification using shank IMU
         data from the NONAN GaitPrint dataset;
-  \item Systematically applying INT8 and 4-bit post-training quantization, as well as structured
+  \item Systematically applying INT8 post-training quantization, as well as structured
         channel pruning, and quantifying their impact on \textbf{phase-specific} accuracy and
         F1-score, rather than overall accuracy alone;
   \item Deploying the compressed models on ESP32-S3 hardware and evaluating real-time feasibility
@@ -177,7 +177,7 @@ channels) to keep the model near 11K parameters while retaining temporal modelin
 
 Larger architectures from prior gait-detection literature may be cited for context, but the primary
 comparison in this work is \textbf{across compression configurations} of TinyTCN (FP32 vs.\ INT8 vs.\
-4-bit vs.\ pruned), not against external state-of-the-art classifiers.
+pruned), not against external state-of-the-art classifiers.
 
 \subsection{Deep Compression Protocol}
 
@@ -189,8 +189,7 @@ comparison in this work is \textbf{across compression configurations} of TinyTCN
     \toprule
     \textbf{Technique} & \textbf{Variant} & \textbf{Description} \\
     \midrule
-    Quantization & INT8 (post-training) & PyTorch weight quantization proxy for accuracy evaluation; export is a later deployment step \\
-    Quantization & 4-bit (low bit-width) & Aggressive weight quantization simulation to evaluate accuracy floor \\
+    Quantization & INT8 (post-training) & PyTorch weight quantization proxy for accuracy evaluation; TFLite export for on-device deployment \\
     Pruning & Structured (channel-level), 50\% & Removal of least-salient convolutional channels for real hardware speedup \\
     Combined & INT8 + Pruned & Joint compression for maximum efficiency \\
     \bottomrule
@@ -252,8 +251,8 @@ latency is measured per 0.5-second input window, alongside peak SRAM usage and e
     \midrule
     TinyTCN (FP32) & 96.08 & 97.32 & 96.56 & 92.30 & 95.82 \\
     TinyTCN (INT8) & \placeholder{$-$0.XX\%} & \placeholder{$-$X.XX\%} & \placeholder{$-$0.XX\%} & \placeholder{$-$X.XX\%} & \placeholder{$-$0.XX\%} \\
-    TinyTCN (4-bit) & \placeholder{$-$X.XX\%} & \placeholder{$-$XX.XX\%} & \placeholder{$-$X.XX\%} & \placeholder{$-$XX.XX\%} & \placeholder{$-$X.XX\%} \\
     TinyTCN (Pruned 50\%) & \placeholder{$-$0.XX\%} & \placeholder{$-$X.XX\%} & \placeholder{$-$0.XX\%} & \placeholder{$-$X.XX\%} & \placeholder{$-$0.XX\%} \\
+    TinyTCN (INT8 + Pruned) & \placeholder{$-$X.XX\%} & \placeholder{$-$XX.XX\%} & \placeholder{$-$X.XX\%} & \placeholder{$-$XX.XX\%} & \placeholder{$-$X.XX\%} \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -292,7 +291,7 @@ latency is measured per 0.5-second input window, alongside peak SRAM usage and e
 \subsection{Vulnerability of Transition Phases}
 
 The phase-specific results are expected to show that LR and PSw degrade more sharply under
-aggressive compression (particularly 4-bit quantization) than LS and Sw. This is plausible because
+aggressive compression (particularly structured pruning combined with INT8 quantization) than LS and Sw. This is plausible because
 LR and PSw represent brief, biomechanically transitional windows with overlapping signal
 characteristics between adjacent phases, meaning the classifier relies on finer-grained signal
 detail to disambiguate them. Reduced numerical precision likely narrows the effective decision margin
@@ -309,9 +308,8 @@ precise local feature weights.
 \subsection{Efficiency-Accuracy Trade-off}
 
 The Pareto front analysis is expected to show that INT8 quantization offers the best trade-off
-point---substantial size and latency reduction with minimal ($<$1\%) accuracy loss---while 4-bit
-quantization, despite further size reduction, may cross into a regime of disproportionate accuracy
-loss in transition phases, making it less suitable unless extreme memory constraints demand it.
+point---substantial size and latency reduction with minimal ($<$1\%) accuracy loss---while combined
+INT8+Prune50 further reduces payload size at a larger phase-specific F1 cost, especially in PSw.
 
 \subsection{Feasibility for Real-World Wearable Deployment}
 
@@ -327,8 +325,7 @@ monitoring without reliance on cloud connectivity.
         populations, walking speeds, or pathological gait patterns requires further validation.
   \item Power consumption estimates are derived from current measurement under controlled conditions
         and may vary with real-world duty cycling and radio activity.
-  \item 4-bit quantization support varies across TFLite Micro versions and may require custom kernels
-        not yet fully optimized for ESP32-S3.
+  \item On-device results reported here use ESP32-C3; ESP32-S3 measurements remain future work for the paper's primary deployment target.
 \end{itemize}
 
 \section{Conclusion}
