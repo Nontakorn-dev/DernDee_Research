@@ -4,8 +4,9 @@
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
 \usepackage{textcomp}
-\usepackage{xcolor}
 \usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc}
 
 \renewcommand{\arraystretch}{1.15}
 \setlength{\tabcolsep}{3pt}
@@ -14,20 +15,14 @@
 
 \title{Impact of Deep Compression Techniques on Phase-Specific Accuracy in TinyTCN for Real-Time Gait Detection}
 
-\author{\IEEEauthorblockN{Author Name}
-\IEEEauthorblockA{\textit{Department Name} \\
-\textit{Institution Name} \\
-City, Country \\
-email@example.com}
+\author{\IEEEauthorblockN{Nontakorn Pulakkeaw}
+\IEEEauthorblockA{\textit{Computer Engineering} \\
+\textit{Mahidol University} \\
+Phra Nakhon Si Ayutthaya, Thailand \\
+nonthakorn.dev@gmail.com}
 }
 
 \maketitle
-
-\begin{center}
-\textcolor{red}{\textit{Note: Author identity is a placeholder. All quantitative results reported
-below are computed from the current project repository (PyTorch test-set evaluation, compression
-manifest, and ESP32-C3 hardware benchmarks) and are not illustrative placeholders.}}
-\end{center}
 
 \begin{abstract}
 Wearable-based gait phase detection is a critical enabler for rehabilitation monitoring, fall-risk
@@ -175,7 +170,70 @@ rates 1, 2, and 4) with residual connections, batch normalization, and a lightwe
 head (global pooling followed by a dense softmax layer over the four phase classes). The model
 consumes causal 0.5-second windows (50 samples at 100~Hz). Channel width is deliberately kept
 narrow (32 hidden channels) to keep the model near 11K parameters while retaining temporal modeling
-capacity.
+capacity. Fig.~\ref{fig:architecture} illustrates the overall data flow and the internal structure
+of each causal convolutional block.
+
+\begin{figure*}[!t]
+  \centering
+  \begin{tikzpicture}[
+      block/.style={rectangle, draw, thick, fill=blue!6, rounded corners,
+        text width=2.05cm, minimum height=1.05cm, align=center, font=\scriptsize},
+      io/.style={rectangle, draw, thick, fill=green!8, rounded corners,
+        text width=1.55cm, minimum height=1.05cm, align=center, font=\scriptsize},
+      sblock/.style={rectangle, draw, thick, fill=gray!8, rounded corners,
+        text width=1.9cm, minimum height=0.85cm, align=center, font=\scriptsize},
+      sum/.style={circle, draw, thick, fill=orange!12, minimum size=0.55cm, font=\scriptsize},
+      arr/.style={thick, -{Latex[length=2mm]}},
+      darr/.style={thick, dashed, -{Latex[length=2mm]}}
+    ]
+   
+    \node[io] (input) {Input\\$50\times12$};
+    \node[block, right=0.32cm of input] (b1) {Causal Conv Block 1\\$12\!\to\!32$, $k{=}5$, $d{=}1$};
+    \node[block, right=0.32cm of b1] (b2) {Causal Conv Block 2\\$32\!\to\!32$, $k{=}5$, $d{=}2$};
+    \node[block, right=0.32cm of b2] (b3) {Causal Conv Block 3\\$32\!\to\!32$, $k{=}3$, $d{=}4$};
+    \node[block, right=0.32cm of b3] (gap) {Global Avg. Pool};
+    \node[block, right=0.32cm of gap] (fc) {Dense\\$32\!\to\!4$};
+    \node[io, right=0.32cm of fc] (out) {Softmax\\LR/LS/PSw/Sw};
+
+    \draw[arr] (input) -- (b1);
+    \draw[arr] (b1) -- (b2);
+    \draw[arr] (b2) -- (b3);
+    \draw[arr] (b3) -- (gap);
+    \draw[arr] (gap) -- (fc);
+    \draw[arr] (fc) -- (out);
+
+   
+    \node[sblock, below=1.55cm of b1, xshift=1.9cm] (pad) {Causal Pad\\(left-pad $(k{-}1)d$)};
+    \node[sblock, right=0.28cm of pad] (conv) {Conv1D\\kernel $k$, dilation $d$};
+    \node[sblock, right=0.28cm of conv] (bn) {BatchNorm};
+    \node[sblock, right=0.28cm of bn] (relu) {ReLU};
+    \node[sum, right=0.5cm of relu] (add) {$+$};
+    \node[sblock, above=0.42cm of add] (resid) {$1{\times}1$ Conv\\(if $C_{in}\!\neq\!C_{out}$)};
+    \node[sblock, right=0.35cm of add] (bout) {Block\\Output};
+
+    \draw[arr] (pad) -- (conv);
+    \draw[arr] (conv) -- (bn);
+    \draw[arr] (bn) -- (relu);
+    \draw[arr] (relu) -- (add);
+    \draw[arr] (add) -- (bout);
+    \node[sblock, left=0.28cm of pad] (bin) {Block\\Input};
+    \draw[arr] (bin) -- (pad);
+    \draw[arr] (bin.south) -- ++(0,-0.32cm) -| (resid.west);
+    \draw[arr] (resid) -- (add);
+
+    \begin{scope}[on background layer]
+      \node[draw, dashed, thick, fit=(bin)(pad)(conv)(bn)(relu)(add)(resid)(bout),
+        inner sep=0.18cm, label={[font=\scriptsize\itshape]below:(b) Causal Conv Block detail}] (detailbox) {};
+    \end{scope}
+    \node[font=\scriptsize\itshape] at ($(input)!0.5!(out)+(0,0.85cm)$) {(a) TinyTCN inference pipeline};
+    \draw[darr] (b1.south) -- ++(0,-0.28cm) -| (detailbox.north -| b1);
+  \end{tikzpicture}
+  \caption{TinyTCN architecture: (a) end-to-end inference pipeline from a $50\times12$ causal input
+  window to a 4-class softmax over gait phases, and (b) internal structure of each causal
+  convolutional block, including the causal left-padding, dilated 1-D convolution, batch
+  normalization, ReLU activation, and identity/$1{\times}1$-convolution residual connection.}
+  \label{fig:architecture}
+\end{figure*}
 
 \subsection{Baseline Architectures for Context}
 
