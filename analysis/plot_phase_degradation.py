@@ -82,6 +82,7 @@ def plot_phase_degradation(
     manifest_path: Path,
     *,
     metric: str = "phase_accuracy",
+    layout: str = "column",
     out_pdf: Path,
     out_png: Path | None = None,
 ) -> None:
@@ -93,7 +94,14 @@ def plot_phase_degradation(
     compressed = [name for name in configs if name != "FP32"]
 
     apply_paper_style()
-    fig, (ax_abs, ax_delta) = plt.subplots(1, 2, figsize=(7.0, 2.85), layout="constrained")
+    if layout == "column":
+        fig, (ax_abs, ax_delta) = plt.subplots(
+            2, 1, figsize=(3.35, 5.0), layout="constrained", gridspec_kw={"hspace": 0.38}
+        )
+    elif layout == "row":
+        fig, (ax_abs, ax_delta) = plt.subplots(1, 2, figsize=(7.0, 2.85), layout="constrained")
+    else:
+        raise ValueError(f"Unknown layout: {layout}")
 
     x = np.arange(len(PHASES))
     offsets_abs = _offsets(len(configs))
@@ -202,17 +210,30 @@ def plot_phase_degradation(
         ax_delta.set_ylim(min(deltas_all) - pad, max(deltas_all) + pad)
 
     ordered_names = [name for name in configs if name in legend_handles]
-    fig.legend(
-        [legend_handles[name] for name in ordered_names],
-        ordered_names,
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.15),
-        ncol=len(ordered_names),
-        frameon=False,
-        fontsize=8,
-        handletextpad=0.4,
-        columnspacing=1.3,
-    )
+    if layout == "column":
+        fig.legend(
+            [legend_handles[name] for name in ordered_names],
+            ordered_names,
+            loc="center",
+            bbox_to_anchor=(0.5, 0.505),
+            ncol=2,
+            frameon=False,
+            fontsize=7.5,
+            handletextpad=0.35,
+            columnspacing=1.2,
+        )
+    else:
+        fig.legend(
+            [legend_handles[name] for name in ordered_names],
+            ordered_names,
+            loc="upper center",
+            bbox_to_anchor=(0.5, 1.15),
+            ncol=len(ordered_names),
+            frameon=False,
+            fontsize=8,
+            handletextpad=0.4,
+            columnspacing=1.3,
+        )
 
     save_figure(fig, out_pdf, out_png)
 
@@ -221,13 +242,25 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--manifest", type=Path, default=COMPRESSION_RESULTS / "manifest.json")
     p.add_argument("--metric", choices=list(METRIC_LABELS), default="phase_accuracy")
+    p.add_argument(
+        "--layout",
+        choices=("column", "row"),
+        default="column",
+        help="column: stacked panels for IEEE single-column; row: side-by-side for full-width",
+    )
     p.add_argument("--out-pdf", type=Path, default=PAPER_FIGURES / "phase_degradation.pdf")
     p.add_argument("--out-png", type=Path, default=PAPER_FIGURES / "phase_degradation.png")
     args = p.parse_args()
 
     if not args.manifest.exists():
         raise SystemExit(f"Manifest not found: {args.manifest}. Run analysis/collect_pareto.py first.")
-    plot_phase_degradation(args.manifest, metric=args.metric, out_pdf=args.out_pdf, out_png=args.out_png)
+    plot_phase_degradation(
+        args.manifest,
+        metric=args.metric,
+        layout=args.layout,
+        out_pdf=args.out_pdf,
+        out_png=args.out_png,
+    )
     print(f"Saved {args.out_pdf}")
 
 
