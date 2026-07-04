@@ -80,6 +80,22 @@
       "phase_pred": "Sw",
       "phase_label": "Sw",
       "pred_match": true
+    },
+    "INT8+Prune25": {
+      "status": "pending_measurement",
+      "artifact": "experiments/esp32/exports/INT8+Prune25/model.tflite",
+      "trials": 1000,
+      "warmup": 20,
+      "tensor_arena_kb": 120,
+      "notes": "Requires export + ESP32 flash; see experiments/esp32/scripts/export_tflite.py"
+    },
+    "INT8+Prune75": {
+      "status": "pending_measurement",
+      "artifact": "experiments/esp32/exports/INT8+Prune75/model.tflite",
+      "trials": 1000,
+      "warmup": 20,
+      "tensor_arena_kb": 120,
+      "notes": "Requires export + ESP32 flash; see experiments/esp32/scripts/export_tflite.py"
     }
   }
 }

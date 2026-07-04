@@ -30,7 +30,7 @@ sys.path.insert(0, str(TINYTCN_DIR))
 sys.path.insert(0, str(RESEARCH_ROOT))
 
 from data.dataset import probe_label_column  # noqa: E402
-from data.splits import files_for_split, load_split  # noqa: E402
+from data.splits import SplitPolicy, assert_files_match_split, files_for_split, load_split  # noqa: E402
 from eval_checkpoint import (  # noqa: E402
     evaluate_model_from_checkpoint_config,
     load_checkpoint,
@@ -44,6 +44,14 @@ from training import make_loader, pick_device  # noqa: E402
 
 
 CONFIGS = ("FP32", "INT8", "Prune50", "INT8+Prune50")
+
+
+def prune_config_name(keep_ratio: float) -> str:
+    return f"Prune{int(round(keep_ratio * 100))}"
+
+
+def combined_config_name(keep_ratio: float) -> str:
+    return f"INT8+{prune_config_name(keep_ratio)}"
 
 
 def count_parameters(model: nn.Module) -> int:
@@ -140,6 +148,10 @@ def finetune_model(
     if not train_files:
         raise ValueError(f"No train files found under {data_root}")
 
+    assert_files_match_split(
+        train_files, split_map, policy=SplitPolicy.TRAIN_ONLY, context="prune fine-tune"
+    )
+
     channels = cfg.get("channels", "bilateral")
     feature_columns = cfg.get("feature_columns") or IMU_CHANNEL_SETS[channels]
     label_column = cfg.get("label_column") or probe_label_column(train_files, channels)
@@ -210,6 +222,7 @@ def build_config_model(
     ckpt: dict[str, Any],
     args: argparse.Namespace,
 ) -> tuple[nn.Module, dict[str, Any], int, str]:
+    keep_ratio = float(getattr(args, "keep_ratio", 0.5))
     if name == "FP32":
         return copy.deepcopy(fp32_model), copy.deepcopy(ckpt), 32, "FP32 checkpoint evaluation"
     if name == "INT8":
@@ -219,8 +232,8 @@ def build_config_model(
             8,
             "PyTorch weight quantize-dequantize INT8 accuracy proxy",
         )
-    if name == "Prune50":
-        model = prune_tinytcn_hidden(fp32_model, keep_ratio=0.5)
+    if name.startswith("Prune") and not name.startswith("INT8+"):
+        model = prune_tinytcn_hidden(fp32_model, keep_ratio=keep_ratio)
         pruned_ckpt = copy.deepcopy(ckpt)
         pruned_ckpt["config"] = dict(pruned_ckpt["config"], hidden=model.head[2].in_features)
         finetune_model(
@@ -235,9 +248,10 @@ def build_config_model(
             eager=not args.lazy,
             cache_trials=args.cache_trials,
         )
-        return model, pruned_ckpt, 32, "Structured 50% hidden-channel prune with fine-tuning"
-    if name == "INT8+Prune50":
-        model = prune_tinytcn_hidden(fp32_model, keep_ratio=0.5)
+        pct = int(round(keep_ratio * 100))
+        return model, pruned_ckpt, 32, f"Structured {pct}% hidden-channel prune with fine-tuning"
+    if name.startswith("INT8+Prune"):
+        model = prune_tinytcn_hidden(fp32_model, keep_ratio=keep_ratio)
         pruned_ckpt = copy.deepcopy(ckpt)
         pruned_ckpt["config"] = dict(pruned_ckpt["config"], hidden=model.head[2].in_features)
         finetune_model(
@@ -252,11 +266,12 @@ def build_config_model(
             eager=not args.lazy,
             cache_trials=args.cache_trials,
         )
+        pct = int(round(keep_ratio * 100))
         return (
             quantize_dequantize_weights(model, bits=8),
             pruned_ckpt,
             8,
-            "Structured 50% prune with fine-tuning, then INT8 weight quantize-dequantize",
+            f"Structured {pct}% prune with fine-tuning, then INT8 weight quantize-dequantize",
         )
     raise ValueError(f"Unknown config {name!r}. Expected one of: {', '.join(CONFIGS)}")
 
@@ -296,13 +311,14 @@ def main() -> None:
     p.add_argument("--out-dir", type=Path, default=COMPRESSION_RESULTS / "runs")
     p.add_argument("--results", type=Path, default=COMPRESSION_RESULTS / "results" / "metrics.json")
     p.add_argument("--overrides", type=Path, default=COMPRESSION_RESULTS / "overrides.json")
-    p.add_argument("--configs", nargs="+", default=list(CONFIGS), choices=CONFIGS)
+    p.add_argument("--configs", nargs="+", default=list(CONFIGS))
     p.add_argument("--batch-size", type=int, default=512)
     p.add_argument("--device", type=str, default="auto")
     p.add_argument("--lazy", action="store_true")
     p.add_argument("--cache-trials", type=int, default=3)
     p.add_argument("--prune-finetune-epochs", type=int, default=5)
     p.add_argument("--finetune-lr", type=float, default=1e-4)
+    p.add_argument("--keep-ratio", type=float, default=0.5, help="Structured prune keep ratio (0.25/0.5/0.75)")
     args = p.parse_args()
 
     ckpt = load_checkpoint(args.checkpoint)

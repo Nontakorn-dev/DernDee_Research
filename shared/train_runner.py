@@ -17,7 +17,7 @@ from tqdm.auto import tqdm
 
 from config_loader import DEFAULT_CONFIG, load_train_config, model_kwargs_for, resolve_split_file
 from data.dataset import fit_norm_stats, probe_label_column
-from data.splits import files_for_split, load_split
+from data.splits import SplitPolicy, assert_files_match_split, files_for_split, load_split
 from evaluate import evaluate_single
 from gait_labels import IMU_CHANNEL_SETS
 from model_registry import build_model_from_config
@@ -179,6 +179,18 @@ def run_training(run: TrainRunConfig) -> dict[str, Any]:
     train_files = files_for_split(run.data_root, split_map, "train")
     val_files = files_for_split(run.data_root, split_map, "val")
     test_files = files_for_split(run.data_root, split_map, "test")
+
+    assert_files_match_split(
+        train_files, split_map, policy=SplitPolicy.TRAIN_ONLY, context=f"{run.model_name} train"
+    )
+    assert_files_match_split(
+        val_files, split_map, policy=SplitPolicy.VAL_ONLY, context=f"{run.model_name} val"
+    )
+    if test_files:
+        assert_files_match_split(
+            test_files, split_map, policy=SplitPolicy.TEST_ONLY, context=f"{run.model_name} test"
+        )
+
     label_column = probe_label_column(train_files, channels)
 
     device = pick_device(run.device)

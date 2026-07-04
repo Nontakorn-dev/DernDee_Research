@@ -1,0 +1,1720 @@
+{
+  "n_folds": 5,
+  "seeds": [
+    42,
+    123,
+    456
+  ],
+  "baselines": {
+    "models": {
+      "tinytcn": {
+        "macro_f1": {
+          "overall_mean": NaN,
+          "overall_std": NaN,
+          "std_across_folds": NaN,
+          "std_across_seeds": NaN,
+          "scores": [
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ]
+          ]
+        },
+        "phase_f1": {
+          "LR": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "LS": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "PSw": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "Sw": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          }
+        }
+      },
+      "cnn1d": {
+        "macro_f1": {
+          "overall_mean": 0.9065838041342997,
+          "overall_std": 0.0048420620787505975,
+          "std_across_folds": 0.0,
+          "std_across_seeds": 0.0048420620787505975,
+          "scores": [
+            [
+              0.9017417420555491,
+              0.9114258662130503,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ]
+          ]
+        },
+        "phase_f1": {
+          "LR": {
+            "overall_mean": 0.8594164625102798,
+            "overall_std": 0.022711166679592998,
+            "std_across_folds": 0.0,
+            "std_across_seeds": 0.022711166679592998,
+            "scores": [
+              [
+                0.8367052958306869,
+                0.8821276291898729,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "LS": {
+            "overall_mean": 0.9774269094270167,
+            "overall_std": 0.0035281260634847933,
+            "std_across_folds": 0.0,
+            "std_across_seeds": 0.0035281260634847933,
+            "scores": [
+              [
+                0.9738987833635319,
+                0.9809550354905014,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "PSw": {
+            "overall_mean": 0.8163921998288486,
+            "overall_std": 0.005935735127072683,
+            "std_across_folds": 0.0,
+            "std_across_seeds": 0.005935735127072683,
+            "scores": [
+              [
+                0.8223279349559213,
+                0.8104564647017759,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "Sw": {
+            "overall_mean": 0.9730996447710536,
+            "overall_std": 0.000935309301002718,
+            "std_across_folds": 0.0,
+            "std_across_seeds": 0.000935309301002718,
+            "scores": [
+              [
+                0.9740349540720563,
+                0.9721643354700509,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          }
+        }
+      },
+      "tcn": {
+        "macro_f1": {
+          "overall_mean": NaN,
+          "overall_std": NaN,
+          "std_across_folds": NaN,
+          "std_across_seeds": NaN,
+          "scores": [
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ]
+          ]
+        },
+        "phase_f1": {
+          "LR": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "LS": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "PSw": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "Sw": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          }
+        }
+      },
+      "lstm_gru": {
+        "macro_f1": {
+          "overall_mean": NaN,
+          "overall_std": NaN,
+          "std_across_folds": NaN,
+          "std_across_seeds": NaN,
+          "scores": [
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ]
+          ]
+        },
+        "phase_f1": {
+          "LR": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "LS": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "PSw": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "Sw": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          }
+        }
+      },
+      "transformer": {
+        "macro_f1": {
+          "overall_mean": NaN,
+          "overall_std": NaN,
+          "std_across_folds": NaN,
+          "std_across_seeds": NaN,
+          "scores": [
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ]
+          ]
+        },
+        "phase_f1": {
+          "LR": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "LS": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "PSw": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "Sw": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "missing_runs": [
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/cnn1d/runs/fold0_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/cnn1d/runs/fold1_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/cnn1d/runs/fold1_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/cnn1d/runs/fold1_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/cnn1d/runs/fold2_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/cnn1d/runs/fold2_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/cnn1d/runs/fold2_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/cnn1d/runs/fold3_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/cnn1d/runs/fold3_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/cnn1d/runs/fold3_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/cnn1d/runs/fold4_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/cnn1d/runs/fold4_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/cnn1d/runs/fold4_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold0_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold0_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold0_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold1_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold1_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold1_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold2_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold2_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold2_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold3_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold3_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold3_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold4_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold4_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold4_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tcn/runs/fold0_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tcn/runs/fold0_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tcn/runs/fold0_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tcn/runs/fold1_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tcn/runs/fold1_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tcn/runs/fold1_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tcn/runs/fold2_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tcn/runs/fold2_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tcn/runs/fold2_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tcn/runs/fold3_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tcn/runs/fold3_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tcn/runs/fold3_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tcn/runs/fold4_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tcn/runs/fold4_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tcn/runs/fold4_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tinytcn/runs/fold0_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tinytcn/runs/fold0_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tinytcn/runs/fold0_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tinytcn/runs/fold1_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tinytcn/runs/fold1_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tinytcn/runs/fold1_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tinytcn/runs/fold2_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tinytcn/runs/fold2_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tinytcn/runs/fold2_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tinytcn/runs/fold3_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tinytcn/runs/fold3_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tinytcn/runs/fold3_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tinytcn/runs/fold4_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tinytcn/runs/fold4_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/tinytcn/runs/fold4_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold0_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold0_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold0_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold1_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold1_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold1_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold2_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold2_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold2_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold3_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold3_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold3_seed456_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold4_seed123_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold4_seed42_fp32_100hz",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold4_seed456_fp32_100hz"
+    ],
+    "tinytcn_vs_baselines": {
+      "cnn1d": {
+        "n_pairs": 0,
+        "wilcoxon_p": null,
+        "ttest_p": null,
+        "mean_diff": null
+      },
+      "tcn": {
+        "n_pairs": 0,
+        "wilcoxon_p": null,
+        "ttest_p": null,
+        "mean_diff": null
+      },
+      "lstm_gru": {
+        "n_pairs": 0,
+        "wilcoxon_p": null,
+        "ttest_p": null,
+        "mean_diff": null
+      },
+      "transformer": {
+        "n_pairs": 0,
+        "wilcoxon_p": null,
+        "ttest_p": null,
+        "mean_diff": null
+      }
+    }
+  },
+  "compression": {
+    "configs": {
+      "FP32": {
+        "macro_f1": {
+          "overall_mean": NaN,
+          "overall_std": NaN,
+          "std_across_folds": NaN,
+          "std_across_seeds": NaN,
+          "scores": [
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ]
+          ]
+        },
+        "phase_f1": {
+          "LR": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "LS": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "PSw": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "Sw": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          }
+        }
+      },
+      "INT8": {
+        "macro_f1": {
+          "overall_mean": NaN,
+          "overall_std": NaN,
+          "std_across_folds": NaN,
+          "std_across_seeds": NaN,
+          "scores": [
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ]
+          ]
+        },
+        "phase_f1": {
+          "LR": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "LS": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "PSw": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "Sw": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          }
+        }
+      },
+      "Prune50": {
+        "macro_f1": {
+          "overall_mean": NaN,
+          "overall_std": NaN,
+          "std_across_folds": NaN,
+          "std_across_seeds": NaN,
+          "scores": [
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ]
+          ]
+        },
+        "phase_f1": {
+          "LR": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "LS": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "PSw": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "Sw": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          }
+        }
+      },
+      "INT8+Prune50": {
+        "macro_f1": {
+          "overall_mean": NaN,
+          "overall_std": NaN,
+          "std_across_folds": NaN,
+          "std_across_seeds": NaN,
+          "scores": [
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ],
+            [
+              NaN,
+              NaN,
+              NaN
+            ]
+          ]
+        },
+        "phase_f1": {
+          "LR": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "LS": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "PSw": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          },
+          "Sw": {
+            "overall_mean": NaN,
+            "overall_std": NaN,
+            "std_across_folds": NaN,
+            "std_across_seeds": NaN,
+            "scores": [
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ],
+              [
+                NaN,
+                NaN,
+                NaN
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "missing_runs": [
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold0_seed123/FP32",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold0_seed123/INT8",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold0_seed123/INT8+Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold0_seed123/Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold0_seed42/FP32",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold0_seed42/INT8",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold0_seed42/INT8+Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold0_seed42/Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold0_seed456/FP32",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold0_seed456/INT8",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold0_seed456/INT8+Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold0_seed456/Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold1_seed123/FP32",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold1_seed123/INT8",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold1_seed123/INT8+Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold1_seed123/Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold1_seed42/FP32",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold1_seed42/INT8",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold1_seed42/INT8+Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold1_seed42/Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold1_seed456/FP32",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold1_seed456/INT8",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold1_seed456/INT8+Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold1_seed456/Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold2_seed123/FP32",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold2_seed123/INT8",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold2_seed123/INT8+Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold2_seed123/Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold2_seed42/FP32",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold2_seed42/INT8",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold2_seed42/INT8+Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold2_seed42/Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold2_seed456/FP32",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold2_seed456/INT8",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold2_seed456/INT8+Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold2_seed456/Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold3_seed123/FP32",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold3_seed123/INT8",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold3_seed123/INT8+Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold3_seed123/Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold3_seed42/FP32",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold3_seed42/INT8",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold3_seed42/INT8+Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold3_seed42/Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold3_seed456/FP32",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold3_seed456/INT8",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold3_seed456/INT8+Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold3_seed456/Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold4_seed123/FP32",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold4_seed123/INT8",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold4_seed123/INT8+Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold4_seed123/Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold4_seed42/FP32",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold4_seed42/INT8",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold4_seed42/INT8+Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold4_seed42/Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold4_seed456/FP32",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold4_seed456/INT8",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold4_seed456/INT8+Prune50",
+      "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/fold4_seed456/Prune50"
+    ],
+    "fp32_vs_compression": {
+      "INT8": {
+        "n_pairs": 0,
+        "wilcoxon_p": null,
+        "ttest_p": null,
+        "mean_diff": null
+      },
+      "Prune50": {
+        "n_pairs": 0,
+        "wilcoxon_p": null,
+        "ttest_p": null,
+        "mean_diff": null
+      },
+      "INT8+Prune50": {
+        "n_pairs": 0,
+        "wilcoxon_p": null,
+        "ttest_p": null,
+        "mean_diff": null
+      }
+    }
+  }
+}

@@ -32,16 +32,21 @@ microcontrollers remains challenging. This study investigates the impact of deep
 techniques---post-training INT8 quantization and structured channel pruning---on the
 phase-specific accuracy of a Temporal Convolutional Network (TinyTCN) designed for real-time gait
 phase classification on the ESP32-C3 microcontroller. Using shank-mounted IMU data from the NONAN
-GaitPrint dataset, subject-wise cross-validation was used to evaluate generalization. We
-systematically apply INT8 post-training quantization and structured channel pruning to
-TinyTCN, quantify phase-specific accuracy degradation (LR, LS, PSw, Sw), and map the
-efficiency--accuracy trade-off via a Pareto front of macro F1-score versus on-device model size.
-On the held-out test set (2.58M windows), INT8 quantization reduced estimated payload from 42.8~KB
-to 12.7~KB with only a 0.07 percentage-point drop in macro F1 (91.50\% to 91.43\%), whereas
-structured 50\% pruning combined with INT8 reduced macro F1 by 3.05~pp (to 88.45\%) with the
-largest F1 loss in PSw ($-$3.43~pp). On ESP32-C3, INT8+Prune50 achieved 69.4~ms mean inference
-latency with an 11.6~KB TFLite model, a 120~KB tensor arena, and $\sim$156~KB minimum free heap
-remaining.
+GaitPrint dataset, we evaluate all models under subject-wise stratified 5-fold
+cross-validation ($K{=}5$) with three random seeds (42, 123, 456). Validation
+subjects were re-assigned from the non-test pool independently for each fold.
+We systematically apply INT8 post-training quantization and structured channel
+pruning to TinyTCN, quantify phase-specific accuracy degradation (LR, LS, PSw, Sw),
+and map the efficiency--accuracy trade-off via a Pareto front of macro F1-score
+versus on-device model size. Test evaluation uses stride-1 windows (highly
+overlapping); we report per-subject blocked macro F1 alongside window-level metrics.
+Representative single-split results (6 test subjects) show INT8 quantization reduced
+estimated payload from 42.8~KB to 12.7~KB with only a 0.07 percentage-point drop
+in macro F1 (91.50\% to 91.43\%), whereas structured 50\% pruning combined with
+INT8 reduced macro F1 by 3.05~pp (to 88.45\%) with the largest F1 loss in PSw
+($-$3.43~pp). On ESP32-C3, INT8+Prune50 achieved 69.4~ms mean inference latency
+(p95 69.4~ms) with an 11.6~KB TFLite model, a 120~KB tensor arena, and
+$\sim$156~KB minimum free heap remaining.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -160,14 +165,22 @@ information loss. This paper directly addresses this gap.
         experiments, balancing temporal resolution against on-device resource constraints.
   \item \textbf{Labeling:} Gait cycle phases labeled as Loading Response (LR), Loading Stance (LS),
         Pre-Swing (PSw), and Swing (Sw).
-  \item \textbf{Data split:} Subject-wise split (24 train / 5 validation / 6 test subjects),
-        with no subject leakage across partitions.
+  \item \textbf{Data split:} Subject-wise stratified 5-fold CV ($K{=}5$) with three seeds;
+        validation subjects rotate per fold (re-sampled from the non-test pool) to avoid
+        repeated early-stopping bias; no subject leakage across train/val/test.
   \item \textbf{Normalization:} Per-channel z-score normalization computed on the training set only.
-  \item \textbf{Windowing:} Causal 0.5~s windows with train stride~5 and validation/test stride~1.
+  \item \textbf{Windowing:} Causal 0.5~s windows with train stride~5 and validation/test stride~1
+        (test windows overlap $\approx$98\%; per-subject blocked macro F1 reported alongside
+        window-level metrics).
   \item \textbf{Training:} Adam optimizer ($\mathrm{lr}=10^{-3}$), batch size 512, up to 50 epochs;
-        best checkpoint selected by validation macro F1 (TinyTCN best epoch: 48).
-  \item \textbf{Evaluation:} 2,583,680 test windows; metrics reported as accuracy, macro F1, and
-        phase-specific F1/accuracy.
+        best checkpoint selected by validation macro F1 (TinyTCN best epoch: 48 on the legacy split).
+  \item \textbf{Compression fine-tuning:} Pruning uses \emph{training subjects only} (fixed epoch
+        budget; no validation access) to avoid double-dipping on the validation set used for FP32
+        checkpoint selection. Runtime assertions verify zero subject overlap between
+        training/fine-tuning and held-out test partitions for every fold.
+  \item \textbf{Evaluation:} Tables~\ref{tab:baseline} and~\ref{tab:compression-results} report
+        representative single-split results pending full $K{=}5\times3$ aggregation; primary claims
+        use mean$\,\pm$\,std across folds$\times$seeds with paired Wilcoxon tests.
 \end{itemize}
 
 Phase support is highly imbalanced (LS and Sw together account for
@@ -441,24 +454,27 @@ notably for LR under pruning. This motivates reporting both metrics in gait-phas
 \subsection{On-Device Performance on ESP32-C3}
 
 Table~\ref{tab:esp32} reports latency from 1000 timed \emph{Invoke()} calls on a fixed synthetic
-replay window (50$\times$12, normalized with training-set statistics). Pruning alone did not reduce
-latency versus FP32 float on this board ($\sim$260~ms), whereas INT8+Prune50 reduced latency to
-69.4~ms---the only configuration practical for periodic inference at 50--100~ms intervals.
+replay window (50$\times$12, normalized with training-set statistics). Prune50 exports as a
+\emph{float32} TFLite graph (same operator path as FP32), so on-device latency remains
+$\sim$260~ms despite fewer parameters; full-width INT8 uses integer kernels but still processes
+all 32 hidden channels ($\sim$257~ms). INT8+Prune50 combines integer ops with a halved channel
+width, yielding 69.4~ms mean (p95 69.4~ms)---the only configuration practical for periodic
+inference at 50--100~ms intervals.
 
 \begin{table}[!t]
   \caption{On-Device Inference Performance on ESP32-C3 (160~MHz, Tensor Arena 120~KB, 1000 Trials)}
   \label{tab:esp32}
   \centering
   \footnotesize
-  \begin{tabular}{@{}lccc@{}}
+  \begin{tabular}{@{}lcccc@{}}
     \toprule
-    \textbf{Config} & \textbf{Latency} & \textbf{TFLite} & \textbf{Min Heap} \\
-    & \textbf{(ms)} & \textbf{(KB)} & \textbf{(KB)} \\
+    \textbf{Config} & \textbf{Mean} & \textbf{p95} & \textbf{TFLite} & \textbf{Min Heap} \\
+    & \textbf{(ms)} & \textbf{(ms)} & \textbf{(KB)} & \textbf{(KB)} \\
     \midrule
-    FP32 & 850.6 & 49.2 & 156 \\
-    INT8 & 256.8 & 18.9 & 156 \\
-    Prune50 & 260.0 & 20.3 & 156 \\
-    INT8+Prune50 & \textbf{69.4} & \textbf{11.6} & 156 \\
+    FP32 & 850.6 & 850.6 & 49.2 & 156 \\
+    INT8 & 256.8 & 256.8 & 18.9 & 156 \\
+    Prune50 & 260.0 & 260.0 & 20.3 & 156 \\
+    INT8+Prune50 & \textbf{69.4} & \textbf{69.4} & \textbf{11.6} & 156 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -502,6 +518,16 @@ phases.
 \section{Discussion}
 \label{sec:discussion}
 
+\subsection{Variance Across Folds and Seeds}
+
+Full Track~B evaluation aggregates metrics over $K{=}5$ folds and three random seeds.
+We decompose spread into $\sigma_{\mathrm{fold}}$ (std.\ of fold means, capturing subject
+heterogeneity) and $\sigma_{\mathrm{seed}}$ (std.\ of seed means, capturing initialization
+noise). When $\sigma_{\mathrm{fold}} \gg \sigma_{\mathrm{seed}}$, performance differences
+primarily reflect which subjects appear in each test fold rather than training stochasticity;
+near-zero $\sigma_{\mathrm{seed}}$ under INT8 quantization indicates stable compression
+outcomes across seeds.
+
 \subsection{Vulnerability of Transition Phases}
 
 Contrary to the initial hypothesis that LR would degrade first, PSw F1 showed the largest
@@ -539,6 +565,14 @@ configs on a fixed replay window, supporting the validity of the on-device bench
 \begin{itemize}
   \item Results are derived from a single public dataset (NONAN GaitPrint); generalization to other
         populations, walking speeds, or pathological gait patterns requires further validation.
+  \item Baseline and compression tables use the same $K{=}5\times3$ protocol; exploratory
+        fine-tune ablations and prune-ratio grids (25/50/75\%) on a single split are reported
+        separately and not used for significance claims.
+  \item Test stride~1 yields highly overlapping windows ($\sim$2.58M windows on the legacy
+        6-subject test split); per-subject blocked aggregation mitigates inflated effective sample
+        size.
+  \item Full k-fold aggregation and variance decomposition (fold vs.\ seed) are reported in the
+        supplementary analysis pipeline (\texttt{analysis/aggregate\_runs.py}).
   \item On-device benchmarks used a synthetic replay window, not live IMU streaming; end-to-end
         latency with BLE acquisition remains unmeasured.
   \item PyTorch INT8 evaluation uses a quantize-dequantize weight proxy; deployed INT8 TFLite models

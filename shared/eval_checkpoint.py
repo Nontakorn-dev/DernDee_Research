@@ -16,7 +16,7 @@ RESEARCH_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RESEARCH_ROOT / "shared"))
 
 from data.dataset import NormStats, probe_label_column  # noqa: E402
-from data.splits import files_for_split, load_split  # noqa: E402
+from data.splits import SplitPolicy, assert_files_match_split, files_for_split, load_split  # noqa: E402
 from evaluate import evaluate_single  # noqa: E402
 from gait_labels import IMU_CHANNEL_SETS  # noqa: E402
 from model_registry import build_model_from_config  # noqa: E402
@@ -87,6 +87,19 @@ def make_eval_loader_from_config(
     files = files_for_split(data_root, split_map, split)
     if not files:
         raise ValueError(f"No trial files found for split {split!r} under {data_root}")
+
+    if split == "test":
+        assert_files_match_split(
+            files, split_map, policy=SplitPolicy.TEST_ONLY, context="eval_checkpoint test"
+        )
+    elif split == "val":
+        assert_files_match_split(
+            files, split_map, policy=SplitPolicy.VAL_ONLY, context="eval_checkpoint val"
+        )
+    elif split == "train":
+        assert_files_match_split(
+            files, split_map, policy=SplitPolicy.TRAIN_ONLY, context="eval_checkpoint train"
+        )
 
     channels = cfg.get("channels", "bilateral")
     feature_columns = cfg.get("feature_columns") or IMU_CHANNEL_SETS[channels]

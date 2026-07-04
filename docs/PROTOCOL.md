@@ -14,10 +14,41 @@ The first source of truth is PyTorch evaluation. ESP32-C3 latency and SRAM are r
 - Source rate: 200 Hz, decimated by 2
 - Window length: 50 samples (0.5 s)
 - Training stride: 5 samples (0.05 s)
-- Validation/test stride: 1 sample
+- Validation/test stride: 1 sample (highly overlapping test windows)
 - Labels: LR, LS, PSw, Sw
-- Split: subject-wise 24 train / 5 validation / 6 test
+- **Track B (primary):** subject-wise stratified 5-fold CV × 3 seeds `{42, 123, 456}`
+- **Track A (exploratory):** single split seed 42 — appendix only
 - Input: 12 bilateral shank IMU channels, no contact channels
+
+## K-fold splits (Track B)
+
+Generate stratified folds with **rotating validation per fold**:
+
+```bash
+python shared/scripts/make_kfold_splits.py --seed 42
+python analysis/fold_qa_report.py
+```
+
+Outputs:
+
+- `shared/splits/folds/fold{0..4}.csv`
+- `shared/splits/folds/fold{K}_meta.json` (explicit train/val/test subject lists)
+- `analysis/fold_qa_report.json` (phase balance + val overlap matrix)
+
+Validation subjects are re-sampled from the non-test pool each fold (`fold_seed = base_seed + fold_index`).
+
+## Split integrity assertions
+
+Runtime checks in `shared/data/splits.py` enforce:
+
+| Phase | Policy | Allowed data |
+|-------|--------|--------------|
+| Baseline FP32 train | `TRAIN_ONLY` | train split |
+| Baseline val (checkpoint selection) | `VAL_ONLY` | val split |
+| Prune fine-tune | `TRAIN_ONLY` | train split only (fixed epochs, no val) |
+| Test eval | `TEST_ONLY` | test split |
+
+Wired in: `train_runner.py`, `run_eval.py`, `eval_checkpoint.py`.
 
 ## Data preparation
 
@@ -28,132 +59,61 @@ python shared/preprocess_gaitprint.py --input-dir NONAN_Dataset --output-dir dat
 python shared/scripts/upgrade_xy_labels.py --xy-root dataset/Xy
 ```
 
-Expected columns:
+## FP32 model training (Track B)
 
-- `time`
-- left shank accelerometer: `lt_acc_x`, `lt_acc_y`, `lt_acc_z`
-- left shank gyroscope: `lt_gyr_x`, `lt_gyr_y`, `lt_gyr_z`
-- right shank accelerometer: `rt_acc_x`, `rt_acc_y`, `rt_acc_z`
-- right shank gyroscope: `rt_gyr_x`, `rt_gyr_y`, `rt_gyr_z`
-- labels: `phase_lt`, `phase_rt`
-
-Check labels:
+Per fold×seed job:
 
 ```bash
-python shared/scripts/check_xy_labels.py --channels bilateral
-python shared/scripts/check_xy_labels.py --channels right
+python experiments/scripts/run_kfold_orchestrator.py --sync-only
+caffeinate -dimsu bash experiments/scripts/run_overnight.sh --next --lazy
 ```
 
-## Subject split
+Run directory: `experiments/{model}/runs/fold{K}_seed{S}_fp32_100hz/`  
+Split file: `shared/splits/folds/fold{K}.csv`
 
-The split lives at `shared/splits/subject_split.csv`. Regenerate only when intentionally changing the protocol:
+Canonical config template: `shared/configs/train_fair_comparison.json`
+
+## Compression evaluation (Track B)
+
+Uses FP32 checkpoint from matching fold×seed:
 
 ```bash
-python shared/scripts/make_split.py --seed 42
+python experiments/compression/run_eval.py \
+  --checkpoint experiments/tinytcn/runs/fold0_seed42_fp32_100hz/best_model.pt \
+  --split-file shared/splits/folds/fold0.csv \
+  --out-dir experiments/compression/runs/fold0_seed42
 ```
 
-## FP32 model training (shared protocol)
+Configs: `FP32`, `INT8`, `Prune50`, `INT8+Prune50`
 
-Canonical config: `shared/configs/train_fair_comparison.json`
-
-Train one model:
+## Track A (exploratory, single split)
 
 ```bash
-bash experiments/tinytcn/scripts/train.sh \
-  --config shared/configs/train_fair_comparison.json
+bash experiments/scripts/run_track_a_ablation.sh
+bash experiments/scripts/run_track_a_prune_grid.sh
 ```
 
-Train all baselines:
+Not used for primary significance claims.
+
+## Aggregation and statistics
 
 ```bash
-bash experiments/scripts/train_all_colab.sh \
-  --config shared/configs/train_fair_comparison.json \
-  --lazy \
-  --device cuda
+python analysis/aggregate_runs.py
+python analysis/subject_blocked_metrics.py --checkpoint ... --split-file ...
 ```
 
-Colab guide: `docs/COLAB_TRAINING.md`
+Reports: mean±std, σ_fold vs σ_seed, paired Wilcoxon/t-test.
 
-Training defaults: 50 epochs, Adam lr=1e-3, batch size 512, balanced class weights. The checkpoint with the best validation macro F1 is saved as `best_model.pt` (not necessarily the final epoch). Target label for bilateral input is left-foot phase (`phase_lt`).
+## MacBook overnight guide
 
-Primary outputs:
-
-- `experiments/tinytcn/runs/fp32_100hz/best_model.pt`
-- `experiments/tinytcn/runs/fp32_100hz/norm_stats.json`
-- `experiments/tinytcn/runs/fp32_100hz/test_report.txt`
-- `experiments/tinytcn/runs/fp32_100hz/test_confusion_matrix.json`
-- `experiments/tinytcn/runs/fp32_100hz/history.json`
-
-Evaluate:
-
-```bash
-python shared/eval_checkpoint.py \
-  --checkpoint experiments/tinytcn/runs/fp32_100hz/best_model.pt \
-  --out experiments/tinytcn/runs/fp32_100hz/test_metrics.json
-```
-
-## Compression evaluation
-
-Run all configured compression experiments:
-
-```bash
-bash experiments/compression/scripts/run_compression.sh
-```
-
-Configs:
-
-- `FP32`: baseline checkpoint evaluation
-- `INT8`: PyTorch weight quantize-dequantize accuracy proxy
-- `Prune50`: structured 50% hidden-channel pruning with fine-tuning
-- `INT8+Prune50`: Prune50 with fine-tuning, then INT8 proxy
-
-Outputs:
-
-- `experiments/compression/runs/<CONFIG>/metrics.json`
-- `experiments/compression/results/metrics.json`
-- `experiments/compression/overrides.json`
-
-## Metrics
-
-Report these for each config:
-
-- overall accuracy
-- macro F1
-- per-phase F1
-- per-phase accuracy, computed as confusion-matrix diagonal divided by support
-- model size in KB
-- parameter count
-
-Generate paper artifacts:
-
-```bash
-python analysis/collect_pareto.py
-python analysis/plot_pareto.py
-python analysis/phase_degradation.py --metric phase_accuracy
-```
-
-Outputs:
-
-- `experiments/compression/manifest.json`
-- `experiments/compression/phase_degradation.json`
-- `paper/figures/pareto_front.pdf`
-- `paper/figures/pareto_front.png`
-
-## Paper table sources
-
-- Table 1: `analysis/model_profile.py`, `experiments/compression/manifest.json`
-- Table 2: `experiments/tinytcn/runs/fp32_100hz/test_report.txt`
-- Table 3: `experiments/compression/phase_degradation.json`
-- Pareto figure: `paper/figures/pareto_front.pdf`
-- ESP32 table: hardware benchmark logs only, not PyTorch estimates
+See [`docs/MACBOOK_TRAINING.md`](MACBOOK_TRAINING.md).
 
 ## ESP32-C3 measurement boundary
 
-Do not fill ESP32 latency, SRAM, or power from PyTorch runs. Those values require:
+Do not fill ESP32 latency from PyTorch runs. Use `experiments/esp32/scripts/measure_deploy_candidates.py` to track pending hardware measurements.
 
-- exportable model artifact
-- TFLite Micro or equivalent firmware integration
-- fixed 0.5 s input window
-- measured on-device latency over repeated windows
-- measured or logged peak SRAM
-- measured current and fixed supply voltage for power
+## Paper table sources
+
+- Table II / III: `analysis/aggregated_runs.json` (after Track B complete)
+- Legacy single-split: `experiments/*/runs/fp32_100hz/test_metrics.json`
+- ESP32 table: `experiments/esp32/benchmarks/esp32_c3_metrics.json`

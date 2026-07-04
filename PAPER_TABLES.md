@@ -11,10 +11,14 @@ Living summary of measured results for `paper/main.tex`. All classification metr
 | Sampling rate | 100 Hz (200 Hz decimated ×2) | `shared/configs/train_fair_comparison.json` |
 | Window | 50 samples (0.5 s, causal) | same |
 | Train / val / test stride | 5 / 1 / 1 samples | same |
-| Subject split | 24 train / 5 val / 6 test (seed 42) | `shared/splits/subject_split.csv` |
-| Selection metric | Best checkpoint by **validation macro F1** | `experiments/*/runs/fp32_100hz/history.json` |
-| Test windows | 2,583,680 | all `test_metrics.json` |
-| Phase support (test) | LR 151,735 · LS 1,274,499 · PSw 140,589 · Sw 1,016,857 | same |
+| **Track B (primary)** | 5-fold stratified CV × 3 seeds; rotating val/fold | `shared/splits/folds/` |
+| **Track A (exploratory)** | Single split 24/5/6 (seed 42) | `shared/splits/subject_split.csv` |
+| Selection metric | Best checkpoint by **validation macro F1** | `experiments/*/runs/*/history.json` |
+| Aggregation | mean±std, σ_fold vs σ_seed, Wilcoxon | `analysis/aggregated_runs.json` |
+| Legacy test windows | 2,583,680 (6 subjects, stride 1, ~98% overlap) | `test_metrics.json` |
+| Phase support (legacy test) | LR 151,735 · LS 1,274,499 · PSw 140,589 · Sw 1,016,857 | same |
+
+> **Note:** Tables below show legacy single-split point estimates until Track B k-fold jobs complete (`experiments/kfold_run_manifest.json`).
 
 ---
 
