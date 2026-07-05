@@ -50,7 +50,13 @@ def config_for_job(job: dict) -> Path:
     return out_dir
 
 
-def run_baseline(job: dict, *, lazy: bool, max_jobs: int) -> int:
+def run_baseline(
+    job: dict,
+    *,
+    lazy: bool,
+    data_root: Path | None,
+    device: str | None,
+) -> int:
     model = job["model"]
     fold = job["fold"]
     seed = job["seed"]
@@ -65,6 +71,10 @@ def run_baseline(job: dict, *, lazy: bool, max_jobs: int) -> int:
         "--output-dir",
         str(run_dir),
     ]
+    if data_root is not None:
+        cmd.extend(["--data-root", str(data_root)])
+    if device is not None:
+        cmd.extend(["--device", device])
     if lazy:
         cmd.append("--lazy")
 
@@ -79,7 +89,13 @@ def run_baseline(job: dict, *, lazy: bool, max_jobs: int) -> int:
     return 0
 
 
-def run_compression(job: dict, *, lazy: bool) -> int:
+def run_compression(
+    job: dict,
+    *,
+    lazy: bool,
+    data_root: Path | None,
+    device: str | None,
+) -> int:
     fold = job["fold"]
     seed = job["seed"]
     config_name = job["config"]
@@ -99,6 +115,10 @@ def run_compression(job: dict, *, lazy: bool) -> int:
         "--configs",
         config_name,
     ]
+    if data_root is not None:
+        cmd.extend(["--data-root", str(data_root)])
+    if device is not None:
+        cmd.extend(["--device", device])
     if lazy:
         cmd.append("--lazy")
 
@@ -123,6 +143,8 @@ def main() -> None:
     p.add_argument("--all-seeds", action="store_true")
     p.add_argument("--max-jobs", type=int, default=1)
     p.add_argument("--lazy", action="store_true")
+    p.add_argument("--data-root", type=Path, default=None, help="Path to dataset/Xy (Colab Drive).")
+    p.add_argument("--device", type=str, default=None, help="cuda, cpu, mps, or auto.")
     p.add_argument(
         "--reset-running",
         action="store_true",
@@ -145,9 +167,19 @@ def main() -> None:
             break
 
         if job["phase"] == "baseline":
-            rc = run_baseline(job, lazy=args.lazy, max_jobs=args.max_jobs)
+            rc = run_baseline(
+                job,
+                lazy=args.lazy,
+                data_root=args.data_root,
+                device=args.device,
+            )
         else:
-            rc = run_compression(job, lazy=args.lazy)
+            rc = run_compression(
+                job,
+                lazy=args.lazy,
+                data_root=args.data_root,
+                device=args.device,
+            )
 
         if rc != 0:
             sys.exit(rc)

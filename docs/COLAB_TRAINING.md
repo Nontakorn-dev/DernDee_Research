@@ -1,11 +1,38 @@
 # Colab Training Guide
 
-Train all gait-phase baselines on Google Colab using the **shared fair-comparison protocol**.
+Train gait-phase models on Google Colab using the **shared fair-comparison protocol**.
+
+**Notebook:** `experiments/colab/colab_ssh_cloudflared.ipynb` (direct GPU cells + optional SSH)
 
 ## Prerequisites
 
 - NONAN GaitPrint preprocessed data at `dataset/Xy` (621 trial CSVs)
-- GPU runtime recommended (CPU works but is slow)
+- GPU runtime recommended (T4); use `--lazy` to reduce RAM
+
+## K-fold Track B (recommended)
+
+After clone + Drive mount:
+
+```bash
+# One job per Colab session (free tier friendly)
+bash experiments/scripts/run_kfold_colab.sh \
+  --data-root /content/drive/MyDrive/Dataset/processed/Xy \
+  --device cuda --lazy --max-jobs 1 --next
+
+# All baseline jobs for one model (15 runs = 5 folds × 3 seeds)
+bash experiments/scripts/run_kfold_colab.sh \
+  --data-root /content/drive/MyDrive/Dataset/processed/Xy \
+  --device cuda --lazy --model tcn --phase baseline --max-jobs 15
+```
+
+Outputs: `experiments/{model}/runs/fold{K}_seed{S}_fp32_100hz/test_metrics.json`
+
+Sync manifest after copying runs back to Mac:
+
+```bash
+python experiments/scripts/run_kfold_orchestrator.py --sync-only
+python analysis/aggregate_runs.py
+```
 
 ## 1. Clone and install
 
