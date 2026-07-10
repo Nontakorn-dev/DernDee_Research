@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-07-07T15:12:38.892384+00:00",
+  "updated_at": "2026-07-10T09:50:00.061759+00:00",
   "jobs": [
     {
       "model": "cnn1d",
@@ -502,9 +502,9 @@
       "seed": 42,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold0_seed42_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060129+00:00",
       "error": null
     },
     {
@@ -513,9 +513,9 @@
       "seed": 123,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold0_seed123_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060221+00:00",
       "error": null
     },
     {
@@ -524,9 +524,9 @@
       "seed": 456,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold0_seed456_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060250+00:00",
       "error": null
     },
     {
@@ -535,9 +535,9 @@
       "seed": 42,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold1_seed42_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060279+00:00",
       "error": null
     },
     {
@@ -546,9 +546,9 @@
       "seed": 123,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold1_seed123_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060307+00:00",
       "error": null
     },
     {
@@ -557,9 +557,9 @@
       "seed": 456,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold1_seed456_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060345+00:00",
       "error": null
     },
     {
@@ -568,9 +568,9 @@
       "seed": 42,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold2_seed42_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060375+00:00",
       "error": null
     },
     {
@@ -579,9 +579,9 @@
       "seed": 123,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold2_seed123_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060406+00:00",
       "error": null
     },
     {
@@ -590,9 +590,9 @@
       "seed": 456,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold2_seed456_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060436+00:00",
       "error": null
     },
     {
@@ -601,9 +601,9 @@
       "seed": 42,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold3_seed42_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060465+00:00",
       "error": null
     },
     {
@@ -612,9 +612,9 @@
       "seed": 123,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold3_seed123_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060492+00:00",
       "error": null
     },
     {
@@ -623,9 +623,9 @@
       "seed": 456,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold3_seed456_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060518+00:00",
       "error": null
     },
     {
@@ -634,9 +634,9 @@
       "seed": 42,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold4_seed42_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060546+00:00",
       "error": null
     },
     {
@@ -645,9 +645,9 @@
       "seed": 123,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold4_seed123_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060572+00:00",
       "error": null
     },
     {
@@ -656,9 +656,9 @@
       "seed": 456,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/lstm_gru/runs/fold4_seed456_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060601+00:00",
       "error": null
     },
     {
@@ -667,9 +667,9 @@
       "seed": 42,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold0_seed42_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060629+00:00",
       "error": null
     },
     {
@@ -678,9 +678,9 @@
       "seed": 123,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold0_seed123_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060652+00:00",
       "error": null
     },
     {
@@ -689,9 +689,9 @@
       "seed": 456,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold0_seed456_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060676+00:00",
       "error": null
     },
     {
@@ -700,9 +700,9 @@
       "seed": 42,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold1_seed42_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060700+00:00",
       "error": null
     },
     {
@@ -711,9 +711,9 @@
       "seed": 123,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold1_seed123_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060723+00:00",
       "error": null
     },
     {
@@ -722,9 +722,9 @@
       "seed": 456,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold1_seed456_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060746+00:00",
       "error": null
     },
     {
@@ -733,9 +733,9 @@
       "seed": 42,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold2_seed42_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060768+00:00",
       "error": null
     },
     {
@@ -744,9 +744,9 @@
       "seed": 123,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold2_seed123_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060793+00:00",
       "error": null
     },
     {
@@ -755,9 +755,9 @@
       "seed": 456,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold2_seed456_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060815+00:00",
       "error": null
     },
     {
@@ -766,9 +766,9 @@
       "seed": 42,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold3_seed42_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060836+00:00",
       "error": null
     },
     {
@@ -777,9 +777,9 @@
       "seed": 123,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold3_seed123_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060863+00:00",
       "error": null
     },
     {
@@ -788,9 +788,9 @@
       "seed": 456,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold3_seed456_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060884+00:00",
       "error": null
     },
     {
@@ -799,9 +799,9 @@
       "seed": 42,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold4_seed42_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060905+00:00",
       "error": null
     },
     {
@@ -810,9 +810,9 @@
       "seed": 123,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold4_seed123_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060925+00:00",
       "error": null
     },
     {
@@ -821,9 +821,9 @@
       "seed": 456,
       "phase": "baseline",
       "config": null,
-      "status": "pending",
+      "status": "done",
       "run_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/transformer/runs/fold4_seed456_fp32_100hz",
-      "finished_at": null,
+      "finished_at": "2026-07-10T09:50:00.060946+00:00",
       "error": null
     },
     {

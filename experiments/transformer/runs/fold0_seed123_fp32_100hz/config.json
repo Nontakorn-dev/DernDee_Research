@@ -1,0 +1,61 @@
+{
+  "name": "train_fair_comparison",
+  "description": "Shared fair-comparison protocol for all gait phase classifiers.",
+  "data": {
+    "channels": "bilateral",
+    "source_hz": 200,
+    "target_hz": 100,
+    "window": 50,
+    "train_stride": 5,
+    "val_stride": 1,
+    "test_stride": 1,
+    "split_file": "shared/splits/folds/fold0.csv"
+  },
+  "train": {
+    "epochs": 50,
+    "batch_size": 512,
+    "lr": 0.001,
+    "optimizer": "adam",
+    "grad_clip": 1.0,
+    "seed": 123,
+    "class_weights": "balanced"
+  },
+  "selection": {
+    "metric": "val_macro_f1",
+    "mode": "max"
+  },
+  "model_defaults": {
+    "hidden": 32,
+    "n_classes": 4
+  },
+  "model_overrides": {
+    "lstm_gru": {
+      "num_layers": 1
+    },
+    "transformer": {
+      "num_layers": 2,
+      "num_heads": 4,
+      "dropout": 0.1
+    },
+    "tcn": {
+      "dilations": [
+        1,
+        2,
+        4,
+        8
+      ]
+    }
+  },
+  "runtime": {
+    "lazy": false,
+    "cache_trials": 3,
+    "device": "auto",
+    "num_workers": 6
+  },
+  "artifacts": {
+    "save_norm_stats": true,
+    "write_confusion_matrices": true,
+    "write_metrics_json": true
+  },
+  "_config_path": "/workspace/Runpods/experiments/transformer/configs/fold0_seed123.json"
+}
