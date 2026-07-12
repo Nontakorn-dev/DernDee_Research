@@ -31,12 +31,12 @@ def count_parameters(model: torch.nn.Module) -> int:
 
 
 def load_model_from_checkpoint(path: Path) -> torch.nn.Module:
+    from eval_checkpoint import model_kwargs_from_config
+
     ckpt = torch.load(path, map_location="cpu", weights_only=False)
     cfg = ckpt.get("config", {})
     model_name = str(cfg.get("model_name", "tcn"))
-    model_kwargs = dict(cfg.get("model_kwargs", {}))
-    model_kwargs.setdefault("n_classes", int(cfg.get("n_classes", 4)))
-    model_kwargs.setdefault("hidden", int(cfg.get("hidden", 32)))
+    model_kwargs = model_kwargs_from_config(cfg)
     model = build_model_from_config(
         model_name,
         n_channels=int(cfg.get("n_channels", 12)),

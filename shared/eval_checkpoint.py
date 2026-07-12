@@ -42,12 +42,21 @@ def _resolve_model_name(cfg: dict[str, Any], checkpoint_path: Path) -> str:
     )
 
 
+def model_kwargs_from_config(cfg: dict[str, Any]) -> dict[str, Any]:
+    """Build model kwargs; top-level ``hidden`` wins over stale ``model_kwargs`` after pruning."""
+    model_kwargs = dict(cfg.get("model_kwargs", {}))
+    model_kwargs.setdefault("n_classes", int(cfg.get("n_classes", 4)))
+    if "hidden" in cfg:
+        model_kwargs["hidden"] = int(cfg["hidden"])
+    else:
+        model_kwargs.setdefault("hidden", 32)
+    return model_kwargs
+
+
 def model_from_checkpoint(ckpt: dict[str, Any], checkpoint_path: Path | None = None) -> nn.Module:
     cfg = ckpt["config"]
     model_name = _resolve_model_name(cfg, checkpoint_path or Path("unknown.pt"))
-    model_kwargs = dict(cfg.get("model_kwargs", {}))
-    model_kwargs.setdefault("n_classes", int(cfg.get("n_classes", 4)))
-    model_kwargs.setdefault("hidden", int(cfg.get("hidden", 32)))
+    model_kwargs = model_kwargs_from_config(cfg)
 
     model = build_model_from_config(
         model_name,

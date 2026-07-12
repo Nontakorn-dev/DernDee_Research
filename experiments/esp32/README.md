@@ -1,6 +1,6 @@
-# ESP32-C3 synthetic benchmark (TinyTCN)
+# ESP32-C3 synthetic benchmark (TCN / StandardTCN)
 
-Hardware latency / SRAM measurements for compressed TinyTCN **without a real IMU**.
+Hardware latency / SRAM measurements for compressed **StandardTCN** **without a real IMU**.
 The sketch replays one fixed `(50, 12)` window, normalizes with training stats, and
 runs TFLite Micro inference in a tight loop.
 

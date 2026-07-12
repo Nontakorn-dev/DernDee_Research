@@ -7,14 +7,18 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 PHASES = ("LR", "LS", "PSw", "Sw")
-CONFIG_ORDER = ("FP32", "INT8", "Prune50", "INT8+Prune50")
+CONFIG_ORDER = ("FP32", "INT8", "Prune25", "Prune50", "Prune75", "INT8+Prune50")
+PARETO_FIGURE_CONFIGS = ("FP32", "INT8", "Prune25", "Prune50", "Prune75", "INT8+Prune50")
+PHASE_FIGURE_CONFIGS = ("FP32", "INT8", "Prune50", "INT8+Prune50")
 
 # Okabe-Ito colorblind-safe qualitative palette; also chosen to remain
 # distinguishable when the paper is printed in grayscale.
 CONFIG_COLORS = {
     "FP32": "#0072B2",
     "INT8": "#009E73",
+    "Prune25": "#56B4E9",
     "Prune50": "#CC79A7",
+    "Prune75": "#999999",
     "INT8+Prune50": "#D55E00",
 }
 
@@ -22,7 +26,9 @@ CONFIG_COLORS = {
 CONFIG_HATCHES = {
     "FP32": "",
     "INT8": "//",
+    "Prune25": "..",
     "Prune50": "\\\\",
+    "Prune75": "--",
     "INT8+Prune50": "xx",
 }
 

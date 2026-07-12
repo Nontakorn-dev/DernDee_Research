@@ -26,6 +26,7 @@ DEFAULT_MODEL = "tcn"
 
 sys.path.insert(0, str(SHARED))
 sys.path.insert(0, str(RESEARCH_ROOT))
+sys.path.insert(0, str(RESEARCH_ROOT / "experiments" / "esp32"))
 
 from data.dataset import NormStats, load_trial  # noqa: E402
 from data.splits import files_for_split, load_split  # noqa: E402
@@ -49,14 +50,17 @@ def load_export_model(ckpt: dict[str, Any], checkpoint_path: Path) -> torch.nn.M
     return model_from_checkpoint(ckpt, checkpoint_path)
 
 
-def checkpoint_for_config(config: str) -> Path:
+def checkpoint_for_config(
+    config: str,
+    *,
+    model: str,
+    fold: int,
+    seed: int,
+) -> Path:
+    from kfold_export_paths import compression_checkpoint
+
     source, _ = EXPORT_PLAN[config]
-    path = COMPRESSION_RUNS / source / "model.pt"
-    if not path.exists():
-        raise FileNotFoundError(
-            f"Missing {path}. Run: bash experiments/compression/scripts/run_compression.sh"
-        )
-    return path
+    return compression_checkpoint(source, model=model, fold=fold, seed=seed)
 
 
 def sample_rep_windows(
@@ -204,13 +208,16 @@ def quantize_float_tflite(
 def export_config(
     config: str,
     *,
+    model: str,
+    fold: int,
+    seed: int,
     out_dir: Path,
     data_root: Path,
     split_file: Path,
     rep_windows: int,
-    seed: int,
+    seed_calib: int,
 ) -> dict[str, Any]:
-    source_ckpt_path = checkpoint_for_config(config)
+    source_ckpt_path = checkpoint_for_config(config, model=model, fold=fold, seed=seed)
     _, quantize = EXPORT_PLAN[config]
 
     ckpt = load_checkpoint(source_ckpt_path)
@@ -237,7 +244,7 @@ def export_config(
             data_root=data_root,
             split_file=split_file,
             n_windows=rep_windows,
-            seed=seed,
+            seed=seed_calib,
         )
         rep_path = config_dir / "rep_windows.npy"
         np.save(rep_path, rep)
@@ -280,22 +287,40 @@ def main() -> None:
         default=list(EXPORT_CONFIGS),
         choices=EXPORT_CONFIGS,
     )
+    p.add_argument("--model", default=DEFAULT_MODEL)
+    p.add_argument("--fold", type=int, default=0)
+    p.add_argument("--seed", type=int, default=42)
     p.add_argument("--out-dir", type=Path, default=ESP32_DIR / "exports")
     p.add_argument("--data-root", type=Path, default=DATA_XY)
-    p.add_argument("--split-file", type=Path, default=SHARED_SPLITS / "subject_split.csv")
+    p.add_argument("--split-file", type=Path, default=None, help="Default: shared/splits/folds/fold{N}.csv")
     p.add_argument("--rep-windows", type=int, default=100, help="Calibration windows for INT8 PTQ.")
-    p.add_argument("--seed", type=int, default=42)
+    p.add_argument("--calib-seed", type=int, default=42, help="RNG seed for INT8 calibration windows.")
     args = p.parse_args()
 
-    summary: dict[str, Any] = {"configs": {}}
+    split_file = args.split_file
+    if split_file is None:
+        from kfold_export_paths import fold_split_file
+
+        split_file = fold_split_file(args.fold)
+
+    summary: dict[str, Any] = {
+        "model": args.model,
+        "fold": args.fold,
+        "seed": args.seed,
+        "split_file": str(split_file),
+        "configs": {},
+    }
     for config in args.configs:
         summary["configs"][config] = export_config(
             config,
+            model=args.model,
+            fold=args.fold,
+            seed=args.seed,
             out_dir=args.out_dir,
             data_root=args.data_root,
-            split_file=args.split_file,
+            split_file=split_file,
             rep_windows=args.rep_windows,
-            seed=args.seed,
+            seed_calib=args.calib_seed,
         )
 
     summary_path = args.out_dir / "export_summary.json"

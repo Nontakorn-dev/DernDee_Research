@@ -1,0 +1,119 @@
+{
+  "source": "tcn/fold0_seed42",
+  "run_dir": "experiments/compression/runs/tcn/fold0_seed42",
+  "params": 11300,
+  "points": [
+    {
+      "name": "FP32",
+      "size_kb": 44.14,
+      "macro_f1": 0.910748296527595,
+      "accuracy": 0.9594418959864521,
+      "phase_f1": {
+        "LR": 0.8625509077572432,
+        "LS": 0.9789699525841102,
+        "PSw": 0.8279963641085574,
+        "Sw": 0.9734759616604696
+      },
+      "phase_accuracy": {
+        "LR": 0.9783184774753072,
+        "LS": 0.9636337864330938,
+        "PSw": 0.9580906703208861,
+        "Sw": 0.9513655664310546
+      },
+      "phase_support": {
+        "LR": 178493,
+        "LS": 1502686,
+        "PSw": 166383,
+        "Sw": 1169295
+      },
+      "params": 11300,
+      "note": "FP32 checkpoint evaluation",
+      "artifact": "experiments/compression/runs/tcn/fold0_seed42/FP32/model.pt",
+      "measured": true
+    },
+    {
+      "name": "INT8",
+      "size_kb": 13.04,
+      "macro_f1": 0.9109577986090602,
+      "accuracy": 0.9595549275288818,
+      "phase_f1": {
+        "LR": 0.8621159466076929,
+        "LS": 0.9790014588986735,
+        "PSw": 0.8291246273044682,
+        "Sw": 0.9735891616254062
+      },
+      "phase_accuracy": {
+        "LR": 0.9784361291479218,
+        "LS": 0.963699002985321,
+        "PSw": 0.957681974720975,
+        "Sw": 0.9516135791224627
+      },
+      "phase_support": {
+        "LR": 178493,
+        "LS": 1502686,
+        "PSw": 166383,
+        "Sw": 1169295
+      },
+      "params": 11300,
+      "note": "PyTorch weight quantize-dequantize INT8 accuracy proxy",
+      "artifact": "experiments/compression/runs/tcn/fold0_seed42/INT8/model.pt",
+      "measured": true
+    },
+    {
+      "name": "Prune50",
+      "size_kb": 13.08,
+      "macro_f1": 0.9054875628806268,
+      "accuracy": 0.9570045912020357,
+      "phase_f1": {
+        "LR": 0.8553165020664154,
+        "LS": 0.9789125533564133,
+        "PSw": 0.8174358229548673,
+        "Sw": 0.9702853731448112
+      },
+      "phase_accuracy": {
+        "LR": 0.9745312141092368,
+        "LS": 0.9652176169871817,
+        "PSw": 0.9471580630232656,
+        "Sw": 0.94517551173998
+      },
+      "phase_support": {
+        "LR": 178493,
+        "LS": 1502686,
+        "PSw": 166383,
+        "Sw": 1169295
+      },
+      "params": 3348,
+      "note": "Structured 50% hidden-channel prune + 5-epoch fine-tune",
+      "artifact": "experiments/compression/runs/tcn/fold0_seed42/Prune50/model.pt",
+      "measured": true
+    },
+    {
+      "name": "INT8+Prune50",
+      "size_kb": 5.27,
+      "macro_f1": 0.9028910780751809,
+      "accuracy": 0.9557267712722214,
+      "phase_f1": {
+        "LR": 0.8493704314331986,
+        "LS": 0.9789534730815528,
+        "PSw": 0.8147557971806929,
+        "Sw": 0.9684846106052792
+      },
+      "phase_accuracy": {
+        "LR": 0.9784417316085224,
+        "LS": 0.96606676311618,
+        "PSw": 0.9403604935600391,
+        "Sw": 0.9411577061391694
+      },
+      "phase_support": {
+        "LR": 178493,
+        "LS": 1502686,
+        "PSw": 166383,
+        "Sw": 1169295
+      },
+      "params": 3348,
+      "note": "Structured 50% prune + 5-epoch fine-tune, then INT8 QDQ",
+      "artifact": "experiments/compression/runs/tcn/fold0_seed42/INT8+Prune50/model.pt",
+      "measured": true
+    }
+  ]
+}

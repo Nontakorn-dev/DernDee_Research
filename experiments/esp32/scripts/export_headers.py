@@ -17,6 +17,7 @@ ESP32_DIR = RESEARCH_ROOT / "experiments" / "esp32"
 
 sys.path.insert(0, str(SHARED))
 sys.path.insert(0, str(RESEARCH_ROOT))
+sys.path.insert(0, str(RESEARCH_ROOT / "experiments" / "esp32"))
 
 from data.dataset import NormStats, load_trial  # noqa: E402
 from data.splits import files_for_split, load_split  # noqa: E402
@@ -176,27 +177,45 @@ def main() -> None:
     p.add_argument(
         "--arduino-dir",
         type=Path,
-        default=ESP32_DIR / "arduino" / "tcn_benchmark" / "tcn_benchmark",
+        default=ESP32_DIR / "arduino" / "tcn_benchmark",
     )
-    p.add_argument("--norm-stats", type=Path, default=TCN_RUNS / "fp32_100hz" / "norm_stats.json")
-    p.add_argument("--checkpoint", type=Path, default=TCN_RUNS / "fp32_100hz" / "best_model.pt")
+    p.add_argument("--model", default="tcn")
+    p.add_argument("--fold", type=int, default=0)
+    p.add_argument("--seed", type=int, default=42)
+    p.add_argument("--norm-stats", type=Path, default=None)
+    p.add_argument("--checkpoint", type=Path, default=None)
     p.add_argument("--data-root", type=Path, default=DATA_XY)
-    p.add_argument("--split-file", type=Path, default=SHARED_SPLITS / "subject_split.csv")
+    p.add_argument("--split-file", type=Path, default=None)
     p.add_argument("--window-index", type=int, default=0, help="Deterministic test-window index.")
     p.add_argument("--tensor-arena-kb", type=int, default=120)
     p.add_argument("--active-config", type=str, default="INT8", choices=EXPORT_CONFIGS)
     args = p.parse_args()
 
+    from kfold_export_paths import (
+        baseline_checkpoint,
+        baseline_norm_stats,
+        compression_checkpoint,
+        fold_split_file,
+    )
+
+    norm_stats_path = args.norm_stats or baseline_norm_stats(
+        model=args.model, fold=args.fold, seed=args.seed
+    )
+    checkpoint_path = args.checkpoint or compression_checkpoint(
+        "FP32", model=args.model, fold=args.fold, seed=args.seed
+    )
+    split_file = args.split_file or fold_split_file(args.fold)
+
     headers_dir = args.arduino_dir
     headers_dir.mkdir(parents=True, exist_ok=True)
 
-    norm = NormStats.load(args.norm_stats)
+    norm = NormStats.load(norm_stats_path)
     write_norm_stats_header(norm, headers_dir / "norm_stats.h")
 
     raw, normalized, label, source_trial = deterministic_replay_window(
         data_root=args.data_root,
-        split_file=args.split_file,
-        checkpoint_path=args.checkpoint,
+        split_file=split_file,
+        checkpoint_path=checkpoint_path,
         window_index=args.window_index,
     )
     write_test_window_header(raw, normalized, label, source_trial, headers_dir / "test_window.h")

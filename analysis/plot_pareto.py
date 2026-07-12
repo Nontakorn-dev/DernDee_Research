@@ -13,35 +13,27 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
+from matplotlib.lines import Line2D
 
 RESEARCH_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RESEARCH_ROOT))
 
-from analysis.plot_style import CONFIG_COLORS, apply_paper_style, save_figure  # noqa: E402
+from analysis.plot_style import CONFIG_COLORS, apply_paper_style, ordered_configs, save_figure  # noqa: E402
 from shared.paths import COMPRESSION_RESULTS, PAPER_FIGURES  # noqa: E402
 
-# Manual label offsets (points) tuned so annotations do not overlap given the
-# known clustering of INT8 (12.7 KB) and Prune50 (13.4 KB).
-LABEL_OFFSETS = {
-    "FP32": (8, -3),
-    "INT8": (-6, 9),
-    "Prune50": (10, 6),
-    "INT8+Prune50": (-3, -18),
+# Tiny horizontal dodge (KB) so INT8 and Prune50 (~13 KB) remain visually separable.
+DISPLAY_X_DODGE_KB = {
+    "INT8": -0.35,
+    "Prune50": 0.35,
 }
-LABEL_HA = {
-    "FP32": "left",
-    "INT8": "right",
-    "Prune50": "left",
-    "INT8+Prune50": "center",
-}
+
+
+def display_x(point: dict) -> float:
+    return float(point["size_kb"]) + DISPLAY_X_DODGE_KB.get(point["name"], 0.0)
 
 
 def pareto_frontier(points: list[dict]) -> tuple[list[dict], list[dict]]:
-    """Split points into the Pareto-optimal frontier and dominated points.
-
-    A point is on the frontier if no smaller-or-equal-size point achieves an
-    equal-or-higher macro F1 (i.e. it is not dominated).
-    """
+    """Return Pareto-optimal and dominated points (minimize size, maximize F1)."""
     ordered = sorted(points, key=lambda p: p["size_kb"])
     frontier: list[dict] = []
     dominated: list[dict] = []
@@ -55,6 +47,90 @@ def pareto_frontier(points: list[dict]) -> tuple[list[dict], list[dict]]:
     return frontier, dominated
 
 
+def plot_pareto(
+    manifest_path: Path,
+    *,
+    out_pdf: Path,
+    out_png: Path | None = None,
+) -> None:
+    data = json.loads(manifest_path.read_text())
+    measured = [pt for pt in data["points"] if pt.get("macro_f1") is not None]
+    if not measured:
+        raise SystemExit("No measured F1 points in manifest.")
+
+    measured = sorted(measured, key=lambda p: ordered_configs([p["name"]]).index(p["name"]))
+    frontier, dominated = pareto_frontier(measured)
+    frontier_names = {pt["name"] for pt in frontier}
+
+    apply_paper_style()
+    fig, ax = plt.subplots(figsize=(3.45, 2.65), layout="constrained")
+
+    if len(frontier) >= 2:
+        ax.plot(
+            [display_x(pt) for pt in frontier],
+            [pt["macro_f1"] for pt in frontier],
+            "-",
+            color="#4b5563",
+            linewidth=1.2,
+            zorder=1,
+            alpha=0.9,
+        )
+
+    legend_handles: list[Line2D] = []
+    for pt in measured:
+        color = CONFIG_COLORS.get(pt["name"], "#374151")
+        on_frontier = pt["name"] in frontier_names
+        ax.scatter(
+            display_x(pt),
+            pt["macro_f1"],
+            s=52 if on_frontier else 40,
+            color=color if on_frontier else "white",
+            edgecolor=color,
+            linewidth=1.2 if on_frontier else 1.0,
+            zorder=3 if on_frontier else 2,
+        )
+        legend_handles.append(
+            Line2D(
+                [0],
+                [0],
+                marker="o",
+                color="w",
+                markerfacecolor=color if on_frontier else "white",
+                markeredgecolor=color,
+                markeredgewidth=1.1,
+                markersize=6,
+                label=pt["name"],
+            )
+        )
+
+    all_f1 = [pt["macro_f1"] for pt in measured]
+    y_lo = max(0.0, min(all_f1) - 0.012)
+    y_hi = min(1.0, max(all_f1) + 0.008)
+    ax.set_ylim(y_lo, y_hi)
+    ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1.0, decimals=1))
+
+    x_vals = [display_x(pt) for pt in measured]
+    x_max = max(pt["size_kb"] for pt in measured)
+    ax.set_xlim(-1.0, x_max * 1.08)
+    ax.set_xlabel("Model size (KB)")
+    ax.set_ylabel("Macro F1-score")
+
+    ax.legend(
+        handles=legend_handles,
+        loc="lower right",
+        fontsize=6.5,
+        handletextpad=0.35,
+        borderpad=0.35,
+        labelspacing=0.35,
+        frameon=True,
+        facecolor="white",
+        edgecolor="#d1d5db",
+        framealpha=0.95,
+    )
+
+    save_figure(fig, out_pdf, out_png)
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--manifest", type=Path, default=COMPRESSION_RESULTS / "manifest.json")
@@ -63,110 +139,9 @@ def main() -> None:
     args = p.parse_args()
 
     if not args.manifest.exists():
-        raise SystemExit(f"Run: python analysis/collect_pareto.py first ({args.manifest})")
+        raise SystemExit(f"Run: python analysis/build_kfold_illustration_manifest.py first ({args.manifest})")
 
-    data = json.loads(args.manifest.read_text())
-    measured = [pt for pt in data["points"] if pt.get("macro_f1") is not None]
-    pending = sorted(
-        [pt for pt in data["points"] if pt.get("macro_f1") is None],
-        key=lambda pt: pt["size_kb"],
-    )
-    if not measured:
-        raise SystemExit("No measured F1 points in manifest.")
-
-    frontier, dominated = pareto_frontier(measured)
-
-    apply_paper_style()
-    fig, ax = plt.subplots(figsize=(3.35, 2.55), layout="constrained")
-
-    fx = [pt["size_kb"] for pt in frontier]
-    fy = [pt["macro_f1"] for pt in frontier]
-    ax.plot(fx, fy, "-", color="#4b5563", linewidth=1.1, zorder=1)
-    for pt in frontier:
-        ax.scatter(
-            pt["size_kb"],
-            pt["macro_f1"],
-            s=46,
-            color=CONFIG_COLORS.get(pt["name"], "#374151"),
-            edgecolor="white",
-            linewidth=0.7,
-            zorder=3,
-            label="_nolegend_",
-        )
-        dx, dy = LABEL_OFFSETS.get(pt["name"], (6, 6))
-        ax.annotate(
-            pt["name"],
-            (pt["size_kb"], pt["macro_f1"]),
-            textcoords="offset points",
-            xytext=(dx, dy),
-            fontsize=7.5,
-            ha=LABEL_HA.get(pt["name"], "left"),
-        )
-
-    for pt in dominated:
-        ax.scatter(
-            pt["size_kb"],
-            pt["macro_f1"],
-            s=42,
-            facecolor="white",
-            edgecolor="#9ca3af",
-            linewidth=1.1,
-            marker="o",
-            zorder=2,
-        )
-        dx, dy = LABEL_OFFSETS.get(pt["name"], (6, 6))
-        ax.annotate(
-            f"{pt['name']}\n(dominated)",
-            (pt["size_kb"], pt["macro_f1"]),
-            textcoords="offset points",
-            xytext=(dx, dy),
-            fontsize=7,
-            color="#6b7280",
-            style="italic",
-            ha=LABEL_HA.get(pt["name"], "left"),
-        )
-
-    if pending:
-        ax.scatter(
-            [pt["size_kb"] for pt in pending],
-            [0.02] * len(pending),
-            marker="x",
-            color="#9ca3af",
-        )
-        for pt in pending:
-            ax.annotate(
-                pt["name"],
-                (pt["size_kb"], 0.02),
-                textcoords="offset points",
-                xytext=(6, 4),
-                fontsize=7,
-            )
-
-    all_f1 = fy + [pt["macro_f1"] for pt in dominated]
-    y_lo = max(0.0, min(all_f1) - 0.03)
-    y_hi = min(1.0, max(all_f1) + 0.03)
-    ax.set_ylim(y_lo, y_hi)
-    ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1.0, decimals=0))
-
-    x_max = max(pt["size_kb"] for pt in measured)
-    ax.set_xlim(0, x_max * 1.15)
-
-    ax.set_xlabel("Model size (KB)")
-    ax.set_ylabel("Macro F1-score")
-    ax.text(
-        0.02,
-        0.03,
-        "\u2191 smaller & higher is better",
-        transform=ax.transAxes,
-        fontsize=6.5,
-        style="italic",
-        color="#6b7280",
-        ha="left",
-        va="bottom",
-    )
-
-    args.out_pdf.parent.mkdir(parents=True, exist_ok=True)
-    save_figure(fig, args.out_pdf, args.out_png)
+    plot_pareto(args.manifest, out_pdf=args.out_pdf, out_png=args.out_png)
     print(f"Saved {args.out_pdf}")
 
 

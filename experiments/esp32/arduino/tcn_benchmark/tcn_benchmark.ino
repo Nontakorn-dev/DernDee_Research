@@ -1,5 +1,5 @@
 /*
- * TinyTCN synthetic benchmark for ESP32-C3 (no IMU/BLE).
+ * TCN (StandardTCN) synthetic benchmark for ESP32-C3 (no IMU/BLE).
  *
  * Prerequisites (Arduino IDE):
  *   - Board: ESP32C3 Dev Module
@@ -128,7 +128,7 @@ void setup() {
   Serial.println("# boot ok");
   Serial.flush();
 
-  Serial.println("# TinyTCN synthetic benchmark");
+  Serial.println("# TCN synthetic benchmark");
   Serial.print("# config=");
   Serial.println(MODEL_CONFIG);
   Serial.print("# model_bytes=");

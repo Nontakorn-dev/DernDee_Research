@@ -170,6 +170,9 @@ def save_artifact(
     cfg["model_name"] = model_name
     if hidden is not None:
         cfg["hidden"] = hidden
+        model_kwargs = dict(cfg.get("model_kwargs", {}))
+        model_kwargs["hidden"] = hidden
+        cfg["model_kwargs"] = model_kwargs
     payload = {
         "model_state_dict": model.cpu().state_dict(),
         "config": cfg,

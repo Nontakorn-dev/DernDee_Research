@@ -60,9 +60,11 @@ Structured pruning at 50\% channel retention with a 5-epoch fine-tune budget red
 attributable to insufficient recovery training.
 PSw F1---the most compression-sensitive transition phase---drops by up to 3.75~pp under aggressive
 Prune25 ($p{<}0.001$).
-INT8+Prune50 yields the smallest ESP32-deployable footprint (${\sim}5.3$~KB) at a 1.54~pp macro F1
+INT8+Prune50 yields the smallest ESP32-deployable TFLite footprint (13.4~KB) at a 1.54~pp macro F1
 cost ($p{=}1.2{\times}10^{-4}$).
-On-device ESP32-C3 latency measurements are pending TFLite re-export.
+On ESP32-C3, INT8+Prune50 achieves 75.7~ms mean latency per 0.5~s window---3.7$\times$ faster than
+full-width INT8 (279.8~ms) despite comparable accuracy trade-offs---whereas FP32 inference exceeds the
+window duration (856~ms).
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -204,8 +206,8 @@ information loss. This paper directly addresses this gap.
         Tables~\ref{tab:pareto-grid} and~\ref{tab:finetune-ablation} report the extended Pareto
         grid and fine-tune schedule ablation on the same splits.
         Figs.~\ref{fig:pareto} and~\ref{fig:phase-degradation} provide a qualitative single-run
-        illustration (fold~0, seed~42). ESP32 latency (Table~\ref{tab:esp32}) is pending TCN TFLite
-        re-export.
+        illustration (fold~0, seed~42). Table~\ref{tab:esp32} reports ESP32-C3 on-device latency for
+        four deployable TFLite configs (same fold/seed checkpoint).
 \end{itemize}
 
 Phase support is highly imbalanced (LS and Sw together account for
@@ -495,32 +497,44 @@ smallest footprint at the largest accuracy cost.
 \begin{figure}[!t]
   \centering
   \includegraphics[width=\linewidth]{figures/pareto_front.pdf}
-  \caption{Illustrative Pareto front (fold~0, seed~42; $N{=}1$). K-fold aggregates with Wilcoxon
-  tests appear in Tables~\ref{tab:kfold-compression} and~\ref{tab:pareto-grid}. INT8 (filled
-  marker) dominates Prune50 on both size and macro F1 in this run.}
+  \caption{Illustrative Pareto front (fold~0, seed~42; six compression configs).
+  K-fold aggregates with Wilcoxon tests appear in Tables~\ref{tab:kfold-compression}
+  and~\ref{tab:pareto-grid}. Frontier: Prune25 $\rightarrow$ INT8+Prune50 $\rightarrow$ INT8;
+  Prune50/Prune75/FP32 are dominated at this checkpoint. INT8 and Prune50 share ${\sim}13$~KB
+  but differ by 0.55~pp macro F1 (labels dodged for visibility).}
   \label{fig:pareto}
 \end{figure}
 
 \begin{figure}[!t]
   \centering
   \includegraphics[width=\linewidth]{figures/phase_degradation.pdf}
-  \caption{Phase-specific test \emph{accuracy} under compression (fold~0, seed~42 illustration).
-  Panel~(b) shows that LR accuracy can increase under pruning even when LR F1 falls
-  (Table~\ref{tab:kfold-compression}), motivating macro and phase F1 over accuracy alone.}
+  \caption{Phase-specific test \emph{accuracy} under compression (fold~0, seed~42).
+  Panel~(b) shows that phase \emph{accuracy} can remain nearly flat while phase F1 falls under
+  compression (INT8+Prune50: LR accuracy $+0.01$~pp vs.\ LR F1 $-$1.32~pp; PSw F1 $-$1.32~pp).
+  Structured pruning also reduces PSw/Sw accuracy (up to $-$1.8~pp), motivating macro and phase F1
+  over accuracy alone.}
   \label{fig:phase-degradation}
 \end{figure}
 
 Fig.~\ref{fig:phase-degradation} complements Tables~\ref{tab:kfold-compression}
-and~\ref{tab:finetune-ablation} by visualizing per-phase \emph{accuracy} rather than F1, highlighting
-that accuracy alone can mask precision loss on minority transition phases.
+and~\ref{tab:finetune-ablation} by visualizing per-phase \emph{accuracy} rather than F1. At
+fold~0/seed~42, INT8+Prune50 keeps LR accuracy essentially unchanged ($+0.01$~pp) while LR F1 drops
+by 1.32~pp; PSw shows the largest combined loss in both metrics ($-$1.77~pp accuracy,
+$-$1.32~pp F1).
 
 \subsection{On-Device Performance on ESP32-C3}
 \label{sec:esp32-results}
 
-On-device latency and SRAM measurements require exporting each compressed TCN checkpoint to
-TFLite and re-running the ESP32-C3 benchmark pipeline. Table~\ref{tab:esp32} is reserved for
-these results; prior measurements from an earlier export pipeline are not reported here because
-the deployment backbone changed to Standard TCN.
+Table~\ref{tab:esp32} reports on-device latency for four TFLite exports derived from the fold~0,
+seed~42 compression checkpoints. Benchmarks replay one fixed normalized $(50,12)$ window in a tight
+loop ($N{=}1000$ trials after 20 warmup invocations) without live IMU or BLE I/O.
+
+INT8+Prune50 is the only configuration that meets a strict real-time budget for per-window inference
+($75.7$~ms mean vs.\ a 500~ms window). Full-width INT8 and float Prune50 remain within the window
+($\approx$280 and 253~ms) but offer no latency advantage over INT8+Prune50 despite similar or larger
+TFLite sizes. FP32 exceeds the window ($856$~ms) and requires a 160~KB tensor arena, reducing minimum
+free heap to 116~KB vs.\ 156~KB for the 120~KB-arena configs. Reported heap reflects remaining dynamic
+SRAM after reserving a fixed arena; model weights are stored in flash.
 
 \input{tables/esp32_placeholder}
 
@@ -563,22 +577,25 @@ identifies INT8 (${\sim}13.0$~KB, $+0.01$~pp macro F1, $p{=}0.30$) as the prefer
 near-lossless compression point for ESP32-C3 deployment. INT8+Prune50 (${\sim}5.3$~KB) trades
 1.54~pp macro F1 ($p{=}1.2{\times}10^{-4}$) for minimum memory. Prune75 offers a middle ground
 (${\sim}26.4$~KB, $-$0.70~pp) when pruning without quantization is desired. Deployment latency
-must be paired with these accuracy/size trade-offs; Table~\ref{tab:esp32} remains pending TCN
-TFLite export and ESP32-C3 re-measurement.
+must be paired with these accuracy/size \emph{and} latency trade-offs. Table~\ref{tab:esp32} shows
+that INT8+Prune50 is the Pareto-optimal deployable point on ESP32-C3: 13.4~KB TFLite, 75.7~ms
+latency, and 156~KB minimum free heap (120~KB arena). Full-width INT8 preserves accuracy but runs
+3.7$\times$ slower on-device; FP32 is not real-time under this export pipeline.
 
 \subsection{Feasibility for Real-World Wearable Deployment}
 
-Once Table~\ref{tab:esp32} is populated, latency can be compared against the intended inference
-schedule (e.g., every 50--100~ms at 100~Hz with stride 5--10). Host-side TFLite smoke validation
-will be re-run after TCN export to confirm argmax agreement between PyTorch and on-device graphs.
+INT8+Prune50 leaves ${\sim}425$~ms headroom within each 0.5~s window, sufficient for BLE packet
+assembly and lightweight post-processing at 100~Hz acquisition. Stride-1 sliding windows would require
+either faster kernels or subsampled inference; this was not evaluated. Host-side TFLite validation
+confirmed argmax agreement for all four exported graphs prior to flashing.
 
 \subsection{Limitations}
 
 \begin{itemize}
   \item Results are derived from a single public dataset (NONAN GaitPrint); generalization to other
         populations, walking speeds, or pathological gait patterns requires further validation.
-  \item ESP32-C3 on-device latency and SRAM headroom (Table~\ref{tab:esp32}) were pending at the
-        time of writing; PyTorch-side conclusions await TFLite export confirmation.
+  \item ESP32-C3 benchmarks use a synthetic replay window (fold~0, seed~42); multi-checkpoint
+        on-device validation across all 15 fold$\times$seed pairs was not performed.
   \item Test stride~1 yields highly overlapping windows; per-subject blocked aggregation mitigates
         inflated effective sample size, but Wilcoxon tests operate on fold$\times$seed aggregates
         ($N{=}15$) rather than subject-blocked scores.

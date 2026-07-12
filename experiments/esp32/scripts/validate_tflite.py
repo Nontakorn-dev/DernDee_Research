@@ -20,6 +20,7 @@ COMPRESSION_RUNS = RESEARCH_ROOT / "experiments" / "compression" / "runs"
 sys.path.insert(0, str(SCRIPTS_DIR))
 sys.path.insert(0, str(SHARED))
 sys.path.insert(0, str(RESEARCH_ROOT))
+sys.path.insert(0, str(RESEARCH_ROOT / "experiments" / "esp32"))
 
 from eval_checkpoint import load_checkpoint  # noqa: E402
 from export_headers import deterministic_replay_window  # noqa: E402
@@ -71,13 +72,18 @@ def default_atol(config: str) -> float:
 def validate_config(
     config: str,
     *,
+    model: str,
+    fold: int,
+    seed: int,
     exports_dir: Path,
     normalized_window: np.ndarray,
     label: int,
     atol: float | None,
 ) -> dict:
+    from kfold_export_paths import compression_checkpoint
+
     source, _ = EXPORT_PLAN[config]
-    ckpt_path = COMPRESSION_RUNS / source / "model.pt"
+    ckpt_path = compression_checkpoint(source, model=model, fold=fold, seed=seed)
     tflite_path = exports_dir / config / "model.tflite"
 
     tol = default_atol(config) if atol is None else atol
@@ -116,18 +122,28 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--configs", nargs="+", default=list(EXPORT_CONFIGS), choices=EXPORT_CONFIGS)
     p.add_argument("--exports-dir", type=Path, default=ESP32_DIR / "exports")
-    p.add_argument("--checkpoint", type=Path, default=TCN_RUNS / "fp32_100hz" / "best_model.pt")
+    p.add_argument("--model", default="tcn")
+    p.add_argument("--fold", type=int, default=0)
+    p.add_argument("--seed", type=int, default=42)
+    p.add_argument("--checkpoint", type=Path, default=None)
     p.add_argument("--data-root", type=Path, default=DATA_XY)
-    p.add_argument("--split-file", type=Path, default=SHARED_SPLITS / "subject_split.csv")
+    p.add_argument("--split-file", type=Path, default=None)
     p.add_argument("--window-index", type=int, default=0)
     p.add_argument("--atol", type=float, default=None, help="Max abs logit diff tolerance (auto per config if unset).")
     p.add_argument("--out", type=Path, default=ESP32_DIR / "benchmarks" / "host_validation.json")
     args = p.parse_args()
 
+    from kfold_export_paths import compression_checkpoint, fold_split_file
+
+    checkpoint_path = args.checkpoint or compression_checkpoint(
+        "FP32", model=args.model, fold=args.fold, seed=args.seed
+    )
+    split_file = args.split_file or fold_split_file(args.fold)
+
     _, normalized, label, source_trial = deterministic_replay_window(
         data_root=args.data_root,
-        split_file=args.split_file,
-        checkpoint_path=args.checkpoint,
+        split_file=split_file,
+        checkpoint_path=checkpoint_path,
         window_index=args.window_index,
     )
 
@@ -136,6 +152,9 @@ def main() -> None:
         results.append(
             validate_config(
                 config,
+                model=args.model,
+                fold=args.fold,
+                seed=args.seed,
                 exports_dir=args.exports_dir,
                 normalized_window=normalized,
                 label=label,
