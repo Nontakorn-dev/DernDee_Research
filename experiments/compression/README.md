@@ -17,6 +17,38 @@ The purpose of this folder is to measure **phase-specific accuracy degradation**
 
 ## Run compression evaluation
 
+### Primary: k-fold × seed (15 checkpoints, paper protocol)
+
+```bash
+# Full pipeline: clean legacy runs → 120 compression jobs → aggregate
+mkdir -p logs && caffeinate -dimsu bash experiments/scripts/run_kfold_compression.sh --lazy \
+  > logs/kfold_compression.log 2>&1
+
+# Monitor
+tail -f logs/kfold_compression.log
+```
+
+Outputs per fold×seed:
+
+```
+experiments/compression/runs/fold{0..4}_seed{42,123,456}/
+├── FP32/metrics.json
+├── INT8/metrics.json
+├── Prune50/metrics.json
+└── INT8+Prune50/metrics.json
+```
+
+Aggregate mean ± std (N=15):
+
+```bash
+python analysis/aggregate_runs.py
+```
+
+Requires `best_model.pt` in each `experiments/tinytcn/runs/fold*_seed*_fp32_100hz/`.
+The script retrains missing baselines automatically unless `--skip-baseline` is set.
+
+### Legacy single-split (exploratory only)
+
 ```bash
 bash experiments/compression/scripts/run_compression.sh
 ```
@@ -28,7 +60,22 @@ This requires:
 - `shared/splits/subject_split.csv`
 - `dataset/Xy`
 
-Configs: **FP32**, **INT8**, **Prune50**, **INT8+Prune50**
+K-fold configs (see `kfold_configs.py`): **FP32**, **INT8**, **Prune25/50/75**, **INT8+Prune50**, plus fine-tune ablation **Prune50\_ft15/ft50**. INT4 is excluded (not deployable on ESP32-C3).
+
+Models: **tinytcn** (default) and **tcn** via `--model tcn`.
+
+### TCN-family ablation sweep (both models)
+
+```bash
+bash experiments/scripts/run_tcn_family_ablation.sh
+```
+
+Runs on the legacy split:
+- Pareto grid: FP32, INT8, INT4, prune ratios 25/50/75%, combined INT8/INT4+Prune
+- Fine-tune ablation: Prune50 and INT8+Prune50 with 5/15/50 epochs
+
+Outputs → `experiments/compression/runs/tcn_family_ablation/`  
+Summary → `analysis/ablation_summary.json`, `analysis/ABLATION_TABLES.md`, `paper/tables/ablation_*.tex`
 
 Outputs:
 

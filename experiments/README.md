@@ -6,6 +6,7 @@ One folder per model architecture.
 experiments/
 ├── tinytcn/        ✅ model, train, inference, runs/
 ├── cnn1d/          ✅ model, train
+├── cnn_lstm/       ✅ model, train (Conv1d → LSTM hybrid)
 ├── lstm_gru/       ✅ model, train
 ├── tcn/            ✅ model, train
 ├── transformer/    ✅ model, train

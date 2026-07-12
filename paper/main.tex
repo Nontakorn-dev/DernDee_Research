@@ -6,15 +6,23 @@
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc}
 
 \renewcommand{\arraystretch}{1.15}
 \setlength{\tabcolsep}{3pt}
+% IEEE-friendly float spacing (avoid stacked tables colliding)
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\floatsep}{10pt plus 2pt minus 2pt}
+\setlength{\intextsep}{10pt plus 2pt minus 2pt}
+\setlength{\dbltextfloatsep}{12pt plus 2pt minus 2pt}
+\setlength{\dblfloatsep}{12pt plus 2pt minus 2pt}
 
 \begin{document}
 
-\title{Impact of Deep Compression Techniques on Phase-Specific Accuracy in TinyTCN for Real-Time Gait Detection}
+\title{Impact of Deep Compression Techniques on Phase-Specific Accuracy in TCN for Real-Time Gait Detection}
 
 \author{\IEEEauthorblockN{Nontakorn Pulakkeaw}
 \IEEEauthorblockA{\textit{Computer Engineering} \\
@@ -30,27 +38,35 @@ Wearable-based gait phase detection is a critical enabler for rehabilitation mon
 assessment, and assistive robotics, yet deploying deep learning models on resource-constrained
 microcontrollers remains challenging. This study investigates the impact of deep compression
 techniques---post-training INT8 quantization and structured channel pruning---on the
-phase-specific accuracy of a Temporal Convolutional Network (TinyTCN) designed for real-time gait
+phase-specific accuracy of a Standard Temporal Convolutional Network (TCN) for real-time gait
 phase classification on the ESP32-C3 microcontroller. Using shank-mounted IMU data from the NONAN
 GaitPrint dataset, we evaluate all models under subject-wise stratified 5-fold
 cross-validation ($K{=}5$) with three random seeds (42, 123, 456). Validation
 subjects were re-assigned from the non-test pool independently for each fold.
 We systematically apply INT8 post-training quantization and structured channel
-pruning to TinyTCN, quantify phase-specific accuracy degradation (LR, LS, PSw, Sw),
+pruning to TCN, quantify phase-specific accuracy degradation (LR, LS, PSw, Sw),
 and map the efficiency--accuracy trade-off via a Pareto front of macro F1-score
 versus on-device model size. Test evaluation uses stride-1 windows (highly
 overlapping); we report per-subject blocked macro F1 alongside window-level metrics.
-Representative single-split results (6 test subjects) show INT8 quantization reduced
-estimated payload from 42.8~KB to 12.7~KB with only a 0.07 percentage-point drop
-in macro F1 (91.50\% to 91.43\%), whereas structured 50\% pruning combined with
-INT8 reduced macro F1 by 3.05~pp (to 88.45\%) with the largest F1 loss in PSw
-($-$3.43~pp). On ESP32-C3, INT8+Prune50 achieved 69.4~ms mean inference latency
-(p95 69.4~ms) with an 11.6~KB TFLite model, a 120~KB tensor arena, and
-$\sim$156~KB minimum free heap remaining.
+Under the primary $K{=}5\times3$ baseline protocol, TCN achieved the highest mean
+macro F1 among compared architectures ($90.87\%\pm1.47\%$), significantly outperforming CNN1D
+($+0.53$~pp, Wilcoxon $p{=}0.004$) while remaining statistically equivalent to Transformer
+($p{=}0.80$) and LSTM+GRU ($p{=}0.17$).
+K-fold compression ($N{=}15$ matched fold$\times$seed pairs per config) shows that INT8
+quantization is effectively lossless ($90.88\%\pm1.47\%$ vs.\ FP32; $p{=}0.30$).
+Structured pruning at 50\% channel retention with a 5-epoch fine-tune budget reduces macro F1 by
+1.47~pp ($p{<}0.001$); extending the fine-tune schedule to 50 epochs recovers 0.94~pp
+($90.34\%\pm1.11\%$, $p{=}0.015$ vs.\ FP32), indicating that part of the pruning loss is
+attributable to insufficient recovery training.
+PSw F1---the most compression-sensitive transition phase---drops by up to 3.75~pp under aggressive
+Prune25 ($p{<}0.001$).
+INT8+Prune50 yields the smallest ESP32-deployable footprint (${\sim}5.3$~KB) at a 1.54~pp macro F1
+cost ($p{=}1.2{\times}10^{-4}$).
+On-device ESP32-C3 latency measurements are pending TFLite re-export.
 \end{abstract}
 
 \begin{IEEEkeywords}
-TinyTCN, deep compression, quantization, pruning, gait phase detection, ESP32-C3, edge AI, wearable sensors
+TCN, deep compression, quantization, pruning, gait phase detection, ESP32-C3, edge AI, wearable sensors
 \end{IEEEkeywords}
 
 \section{Introduction}
@@ -66,9 +82,8 @@ used in real-world wearable devices.
 
 Temporal Convolutional Networks (TCNs), which leverage dilated convolutions to capture long-range
 temporal dependencies with fewer parameters than recurrent architectures, offer a promising middle
-ground between accuracy and efficiency. A compact variant---referred to here as TinyTCN---can, in
-principle, be further compressed via quantization and pruning to meet the strict memory and latency
-budgets of microcontroller-class hardware such as the ESP32-C3.
+ground between accuracy and efficiency and can be further compressed via quantization and pruning
+to meet the strict memory and latency budgets of microcontroller-class hardware such as the ESP32-C3.
 
 While prior work has explored model compression broadly for time-series classification, relatively
 little attention has been paid to how compression affects accuracy unevenly across different
@@ -79,8 +94,8 @@ than steady-state phases such as Swing (Sw).
 
 This study addresses this gap by:
 \begin{enumerate}
-  \item Designing and training a TinyTCN architecture for gait phase classification using shank IMU
-        data from the NONAN GaitPrint dataset;
+  \item Selecting and training a Standard TCN backbone for gait phase classification using shank IMU
+        data from the NONAN GaitPrint dataset, with matched-capacity FP32 baselines for context;
   \item Systematically applying INT8 post-training quantization, as well as structured
         channel pruning, and quantifying their impact on phase-specific accuracy and
         F1-score, rather than overall accuracy alone;
@@ -121,9 +136,9 @@ microcontroller-class hardware.
 TCNs use causal, dilated convolutions to achieve large receptive fields with a fraction of the
 parameters required by recurrent architectures, while supporting parallelized
 computation~\cite{ref2}. This property makes TCNs particularly attractive for edge deployment,
-where both parameter count and inference latency are critical constraints. Compact TCN variants
-(``TinyTCN'') extend this efficiency further by reducing channel width and depth while preserving
-sufficient receptive field coverage for a full gait cycle.
+where both parameter count and inference latency are critical constraints. In this study, all
+architectures share a common hidden width (32 channels) and 0.5~s causal windows, yielding
+10--26K-parameter models sized for ESP32-C3 deployment rather than server-scale capacity.
 
 \subsection{Model Compression Techniques: Quantization and Pruning}
 
@@ -173,14 +188,24 @@ information loss. This paper directly addresses this gap.
         (test windows overlap $\approx$98\%; per-subject blocked macro F1 reported alongside
         window-level metrics).
   \item \textbf{Training:} Adam optimizer ($\mathrm{lr}=10^{-3}$), batch size 512, up to 50 epochs;
-        best checkpoint selected by validation macro F1 (TinyTCN best epoch: 48 on the legacy split).
+        best checkpoint selected by validation macro F1.
+  \item \textbf{Fair comparison design:} All architectures use hidden width 32, four-class output,
+        and identical windowing, optimization, and cross-validation splits. Model capacity is
+        intentionally capped (${\sim}10$--26K parameters) for microcontroller deployment
+        (${\sim}40$--100~KB FP32) rather than maximizing accuracy with large networks.
   \item \textbf{Compression fine-tuning:} Pruning uses \emph{training subjects only} (fixed epoch
         budget; no validation access) to avoid double-dipping on the validation set used for FP32
         checkpoint selection. Runtime assertions verify zero subject overlap between
         training/fine-tuning and held-out test partitions for every fold.
-  \item \textbf{Evaluation:} Tables~\ref{tab:baseline} and~\ref{tab:compression-results} report
-        representative single-split results pending full $K{=}5\times3$ aggregation; primary claims
-        use mean$\,\pm$\,std across folds$\times$seeds with paired Wilcoxon tests.
+  \item \textbf{Evaluation:} Table~\ref{tab:baseline} reports mean$\,\pm$\,std macro F1 over
+        $K{=}5$ folds$\times$3 seeds ($N{=}15$ runs per model) with paired Wilcoxon tests.
+        Primary compression results use the same k-fold protocol
+        (Table~\ref{tab:kfold-compression}, Wilcoxon vs.\ FP32 on $N{=}15$ pairs).
+        Tables~\ref{tab:pareto-grid} and~\ref{tab:finetune-ablation} report the extended Pareto
+        grid and fine-tune schedule ablation on the same splits.
+        Figs.~\ref{fig:pareto} and~\ref{fig:phase-degradation} provide a qualitative single-run
+        illustration (fold~0, seed~42). ESP32 latency (Table~\ref{tab:esp32}) is pending TCN TFLite
+        re-export.
 \end{itemize}
 
 Phase support is highly imbalanced (LS and Sw together account for
@@ -199,19 +224,19 @@ $c$, $y_c$ is the one-hot ground-truth indicator, and $\hat{y}_c$ is the softmax
 probability for phase $c$. This directly motivates reporting \emph{macro}, rather than
 micro-averaged, metrics throughout this paper.
 
-\subsection{TinyTCN Architecture}
+\subsection{TCN Architecture}
 
-The proposed TinyTCN consists of a small stack of dilated causal convolutional blocks (dilation
-rates 1, 2, and 4) with residual connections, batch normalization, and a lightweight classification
-head (global pooling followed by a dense softmax layer over the four phase classes). Each block
-computes a dilated causal convolution~\cite{ref2} (kernel size $k$, dilation $d$, ReLU) so that
-each output depends only on present and past inputs. Stacking three such blocks (kernel sizes
-$5,5,3$; dilations $1,2,4$) yields a receptive field of 21 samples (0.21~s at 100~Hz), comfortably
-within the 0.5~s (50-sample) input window
-while keeping the parameter count low. The model consumes causal 0.5-second windows (50 samples at
-100~Hz). Channel width is deliberately kept narrow (32 hidden channels) to keep the model near 11K
-parameters while retaining temporal modeling capacity. Fig.~\ref{fig:architecture} illustrates the
-overall data flow and the internal structure of each causal convolutional block.
+We adopt a Standard TCN~\cite{ref2} as the deployment backbone. The model consists of four dilated
+causal convolutional blocks (dilation rates 1, 2, 4, and 8) with residual connections, batch
+normalization, and a lightweight classification head (global average pooling followed by a dense
+softmax layer over the four phase classes). Each block computes a dilated causal convolution
+(kernel size $k{=}3$, dilation $d$, ReLU) so that each output depends only on present and past inputs.
+Stacking four such blocks yields a receptive field of 31 samples (0.31~s at 100~Hz), comfortably
+within the 0.5~s (50-sample) input window while keeping the parameter count near 11K. The model
+consumes causal 0.5-second windows (50 samples at 100~Hz). Channel width is deliberately kept narrow
+(32 hidden channels) to retain a microcontroller-deployable footprint (${\sim}45$~KB FP32).
+Fig.~\ref{fig:architecture} illustrates the overall data flow and the internal structure of each
+causal convolutional block.
 
 \begin{figure}[!t]
   \centering
@@ -232,17 +257,19 @@ overall data flow and the internal structure of each causal convolutional block.
 
     % --- (a) Vertical inference pipeline ---
     \node[io] (input) {Input\\$50{\times}12$};
-    \node[block, below=0.18cm of input] (b1) {Block 1\\$12{\to}32$, $k{=}5$, $d{=}1$};
-    \node[block, below=0.18cm of b1] (b2) {Block 2\\$32{\to}32$, $k{=}5$, $d{=}2$};
+    \node[block, below=0.18cm of input] (b1) {Block 1\\$12{\to}32$, $k{=}3$, $d{=}1$};
+    \node[block, below=0.18cm of b1] (b2) {Block 2\\$32{\to}32$, $k{=}3$, $d{=}2$};
     \node[block, below=0.18cm of b2] (b3) {Block 3\\$32{\to}32$, $k{=}3$, $d{=}4$};
-    \node[block, below=0.18cm of b3] (gap) {Global\\Avg.\ Pool};
+    \node[block, below=0.18cm of b3] (b4) {Block 4\\$32{\to}32$, $k{=}3$, $d{=}8$};
+    \node[block, below=0.18cm of b4] (gap) {Global\\Avg.\ Pool};
     \node[block, below=0.18cm of gap] (fc) {Dense\\$32{\to}4$};
     \node[io, below=0.18cm of fc] (out) {Softmax\\LR/LS/PSw/Sw};
 
     \draw[arr] (input) -- (b1);
     \draw[arr] (b1) -- (b2);
     \draw[arr] (b2) -- (b3);
-    \draw[arr] (b3) -- (gap);
+    \draw[arr] (b3) -- (b4);
+    \draw[arr] (b4) -- (gap);
     \draw[arr] (gap) -- (fc);
     \draw[arr] (fc) -- (out);
 
@@ -277,7 +304,7 @@ overall data flow and the internal structure of each causal convolutional block.
     \draw[darr] (b2.east) -- ($(linkmid |- b2.east)+(0,0)$);
     \draw[darr] (linkmid |- b2.east) -- (detailbox.west |- b2.east);
   \end{tikzpicture}
-  \caption{TinyTCN architecture: (a) end-to-end pipeline from a $50{\times}12$ causal window to
+  \caption{Standard TCN architecture: (a) end-to-end pipeline from a $50{\times}12$ causal window to
   a 4-class softmax, and (b) internal structure of each causal convolutional block (left-padding,
   dilated Conv1D, batch norm, ReLU, and residual connection).}
   \label{fig:architecture}
@@ -285,9 +312,11 @@ overall data flow and the internal structure of each causal convolutional block.
 
 \subsection{Baseline Architectures for Context}
 
-The primary comparison in this work is across compression configurations of TinyTCN (FP32 vs.\
-INT8 vs.\ pruned). For context, four FP32 baselines (CNN1D, TCN, LSTM+GRU, Transformer) were
-retrained under an identical protocol (Table~\ref{tab:baseline}).
+The primary comparison in this work is across compression configurations of TCN (FP32 vs.\
+INT8 vs.\ pruned). For context, three FP32 baselines (CNN1D, LSTM+GRU, Transformer) were
+retrained under the same hidden width, windowing, and cross-validation protocol
+(Table~\ref{tab:baseline}). CNN1D uses three Conv1D layers; LSTM+GRU stacks single-layer LSTM and
+GRU encoders; the Transformer uses two encoder layers with four heads ($d{=}32$).
 
 \subsection{Deep Compression Protocol}
 
@@ -299,30 +328,43 @@ proxy is used for PyTorch-side test-set evaluation (Section~\ref{sec:results}). 
 deployment, models are exported as full-integer TensorFlow Lite graphs using TFLite's built-in
 post-training quantization.
 
-\textbf{Structured channel pruning (Prune50).} TinyTCN uses 32 hidden channels in its convolutional
-stem. Each channel is ranked by the total absolute weight magnitude summed over all three stem
-convolutional blocks; the 16 highest-ranked channels are retained and the rest are removed from
-every stem layer and from the classification head. The pruned model is fine-tuned for 5 epochs
-(Adam, learning rate $10^{-4}$) with the same class-balanced loss (Eq.~\ref{eq:loss}) before
-re-evaluation.
+\textbf{Structured channel pruning.} The TCN stem uses 32 hidden channels. Channels are ranked by summed absolute weight magnitude across all stem
+convolutional blocks; the top-$k$ channels are retained and removed elsewhere in the stem and
+classification head. The pruned model is fine-tuned on \emph{training subjects only} (Adam,
+learning rate $10^{-4}$, class-balanced loss) before re-evaluation. Primary k-fold configs sweep
+25\%, 50\%, and 75\% channel retention (Prune25/50/75) with a default 5-epoch fine-tune budget;
+Tables~\ref{tab:finetune-ablation} and~\ref{tab:pareto-grid} report the same protocol at
+$N{=}15$.
 
-Table~\ref{tab:compression} summarizes the compression techniques applied to TinyTCN.
+\textbf{Extended compression grid (k-fold).} Beyond FP32/INT8 and Prune25/50/75, combined
+INT8+Prune50 populates the Pareto front (Table~\ref{tab:pareto-grid}). INT4 is excluded because
+full-integer INT4 TFLite is not supported on the ESP32-C3 deployment target.
+Fine-tune schedule ablation on Prune50 (5/15/50 epochs) isolates whether accuracy loss under
+pruning reflects insufficient recovery training rather than an inherent pruning limit
+(Table~\ref{tab:finetune-ablation}).
+
+Table~\ref{tab:compression} summarizes the compression techniques applied to TCN.
 
 \begin{table}[!t]
-  \renewcommand{\arraystretch}{1.2}
-  \caption{Deep Compression Techniques Applied to TinyTCN}
-  \label{tab:compression}
   \centering
-  \small
-  \begin{tabular}{@{}p{1.6cm}p{1.7cm}p{3.6cm}@{}}
+  \caption{Deep Compression Techniques Applied to TCN}
+  \label{tab:compression}
+  \footnotesize
+  \setlength{\tabcolsep}{3.5pt}
+  \renewcommand{\arraystretch}{1.2}
+  \begin{tabularx}{\columnwidth}{@{} >{\raggedright\arraybackslash}p{1.55cm}
+      >{\raggedright\arraybackslash}p{1.85cm} X @{}}
     \toprule
     \textbf{Technique} & \textbf{Variant} & \textbf{Description} \\
     \midrule
-    Quantization & INT8 (post-training) & PyTorch QDQ proxy for test-set evaluation; full-integer TFLite PTQ for ESP32 export \\
-    Pruning & Structured, 50\% channels & Removal of least-salient convolutional channels for real hardware speedup \\
-    Combined & INT8 + Pruned & Joint compression for maximum efficiency \\
+    Quantization & INT8 (PTQ) &
+      PyTorch QDQ proxy for test metrics; full-integer TFLite PTQ for ESP32 \\
+    Pruning & Structured 25/50/75\% &
+      Drop least-salient hidden channels; default 5-epoch fine-tune on train only \\
+    Combined & INT8+Prune50 &
+      Prune then quantize for the smallest ESP32-deployable footprint \\
     \bottomrule
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \subsection{Hardware Deployment (ESP32-C3)}
@@ -355,246 +397,217 @@ majority phases despite their $\sim\!6\%$ and $\sim\!5\%$ test-set support, resp
 
 \subsection{Baseline Comparison and Model Complexity}
 
-Table~\ref{tab:baseline} compares TinyTCN against four FP32 baselines trained under an identical
-protocol (12-channel bilateral shank IMU, 100~Hz, subject-wise split). TinyTCN achieves the highest
-test macro F1 (91.50\%) while remaining the smallest full-precision model among the compared
-architectures except CNN1D. The per-phase F1 rows in Table~\ref{tab:baseline} show this advantage is not
-uniform across phases: Transformer attains the highest F1 on LS and PSw, and LSTM+GRU on LR, while
-TinyTCN leads only on Sw---indicating that TinyTCN's overall macro F1 advantage stems from a more
-balanced profile rather than dominance on any single phase.
+Table~\ref{tab:baseline} compares TCN against three FP32 baselines under the primary
+$K{=}5\times3$ protocol (mean$\,\pm$\,std over 15 runs). Macro F1 scores cluster tightly
+(90.34--90.87\%); TCN attains the highest mean macro F1 ($90.87\%\pm1.47\%$). Paired Wilcoxon
+tests on matched fold$\times$seed pairs show TCN statistically equivalent to Transformer
+($\Delta{=}{+}0.04$~pp, $p{=}0.80$) and LSTM+GRU ($+0.28$~pp, $p{=}0.17$), but significantly
+higher than CNN1D ($+0.53$~pp, $p{=}0.004$; paired $t$-test $p{=}0.005$).
+Fold~1 is the hardest stratum for all models (${\sim}88$--89\% macro F1); $\sigma_{\mathrm{fold}}
+\gg \sigma_{\mathrm{seed}}$ for TCN (1.38 vs.\ 0.28~pp), indicating subject heterogeneity
+dominates seed noise.
 
 \begin{table}[!t]
-  \caption{Baseline Comparison on the Held-Out Test Split (FP32, Fair Training Protocol)}
+  \centering
+  \caption{Baseline FP32 Comparison ($K{=}5\times3$ Seeds)}
   \label{tab:baseline}
-  \centering
-  \scriptsize
-  \setlength{\tabcolsep}{2.5pt}
-  \renewcommand{\arraystretch}{1.12}
-  \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lccccc@{}}
-    \toprule
-    & \textbf{TinyTCN} & \textbf{Trans.} & \textbf{LSTM+GRU} & \textbf{TCN} & \textbf{CNN1D} \\
-    \midrule
-    Params & 10,948 & 25,956 & 12,356 & 11,560 & 10,727 \\
-    Size (KB) & 42.8 & 101.4 & 48.3 & 45.2 & 41.9 \\
-    Acc.\ (\%) & \textbf{96.30} & 96.38 & 96.25 & 96.04 & 95.58 \\
-    Macro F1 (\%) & \textbf{91.50} & 91.73 & 91.38 & 90.96 & 90.23 \\
-    \midrule
-    \multicolumn{6}{@{}c@{}}{\textit{Phase-specific F1 (\%)}} \\
-    \midrule
-    LR & 87.26 & 87.28 & \textbf{87.85} & 86.40 & 85.77 \\
-    LS & 97.88 & \textbf{98.07} & 97.91 & 97.71 & 97.54 \\
-    PSw & 82.99 & \textbf{83.84} & 82.00 & 82.01 & 80.29 \\
-    Sw & \textbf{97.87} & 97.72 & 97.78 & 97.73 & 97.34 \\
-    \bottomrule
-  \end{tabular*}
-\end{table}
-
-\subsection{Compression Trade-off and Phase-Specific F1}
-
-Table~\ref{tab:compression-results} summarizes PyTorch-side compression evaluation on the same test
-split, reporting model complexity, exported TFLite size, overall accuracy, and macro/phase-specific
-F1 together. INT8 weight quantization preserved accuracy and macro F1 almost exactly, while
-structured pruning reduced parameter count to 3,428 ($-$68.7\%) at a larger macro F1 cost.
-Exported TFLite sizes were measured for ESP32 deployment. PSw---a brief transition
-phase---showed the largest F1 degradation under pruning ($-$3.32~pp for Prune50 and $-$3.43~pp for
-INT8+Prune50 relative to FP32), whereas INT8 quantization alone changed each phase F1 by at most
-0.04~pp.
-
-\begin{table}[!t]
-  \caption{TinyTCN Compression Results and Phase-Specific F1 on the Test Split}
-  \label{tab:compression-results}
-  \centering
-  \scriptsize
-  \setlength{\tabcolsep}{2.5pt}
-  \renewcommand{\arraystretch}{1.12}
-  \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lcccc@{}}
-    \toprule
-    & \textbf{FP32} & \textbf{INT8} & \textbf{Prune50} & \textbf{INT8+Prune50} \\
-    \midrule
-    Params & 10,948 & 10,948 & 3,428 & 3,428 \\
-    Est.\ size (KB) & 42.8 & 12.7 & 13.4 & 5.4 \\
-    TFLite (KB) & 49.2 & 18.9 & 20.3 & 11.6 \\
-    Acc.\ (\%) & \textbf{96.30} & 96.27 & 94.74 & 94.56 \\
-    Macro F1 (\%) & \textbf{91.50} & 91.43 & 88.73 & 88.45 \\
-    \midrule
-    \multicolumn{5}{@{}c@{}}{\textit{Phase-specific F1 (\%)}} \\
-    \midrule
-    LR & 87.26 & 87.04 & 81.32 & 80.52 \\
-    LS & 97.88 & 97.84 & 96.88 & 96.76 \\
-    PSw & 82.99 & 82.95 & 79.67 & 79.56 \\
-    Sw & 97.87 & 97.87 & 97.03 & 96.95 \\
-    \bottomrule
-  \end{tabular*}
-\end{table}
-
-\subsection{Phase-Specific Accuracy Under Compression}
-
-Table~\ref{tab:phase-degradation} reports phase-specific accuracy (overall test accuracy per
-config already appears in Table~\ref{tab:compression-results} and is omitted here to avoid
-duplication). Phase accuracy can diverge from F1 when precision drops but recall remains high,
-notably for LR under pruning. This motivates reporting both metrics in gait-phase studies.
-
-\begin{table}[!t]
-  \caption{Phase-Specific Test Accuracy (\%) Under Compression}
-  \label{tab:phase-degradation}
-  \centering
   \footnotesize
-  \begin{tabular}{@{}lcccc@{}}
+  \setlength{\tabcolsep}{3.2pt}
+  \renewcommand{\arraystretch}{1.12}
+  \begin{tabular}{@{} l *{4}{c} @{}}
     \toprule
-    \textbf{Config} & \textbf{LR} & \textbf{LS} & \textbf{PSw} & \textbf{Sw} \\
+    & \textbf{TCN} & \textbf{Trans.} & \textbf{LSTM} & \textbf{CNN1D} \\
     \midrule
-    FP32 & 95.03 & 96.38 & 91.67 & 97.03 \\
-    INT8 & 95.20 & 96.28 & 91.18 & 97.11 \\
-    Prune50 & 97.39 & 94.36 & 94.11 & 94.90 \\
-    INT8+Prune50 & 97.62 & 94.10 & 94.41 & 94.71 \\
+    Params & 11{,}560 & 25{,}956 & 12{,}356 & 10{,}727 \\
+    Size (KB) & 45.2 & 101.4 & 48.3 & 41.9 \\
+    Macro F1 & \textbf{90.87} & 90.83 & 90.59 & 90.34 \\
+     & $\pm1.47$ & $\pm0.99$ & $\pm1.19$ & $\pm1.21$ \\
+    \addlinespace[0.2ex]
+    \multicolumn{5}{@{}l}{\textit{Phase F1 (\%)}} \\
+    \cmidrule(lr){2-5}
+    LR  & \textbf{85.81} & 85.37 & 84.95 & 84.32 \\
+    LS  & \textbf{97.78} & 97.73 & 97.70 & 97.52 \\
+    PSw & 82.72 & 82.95 & 82.52 & 82.54 \\
+    Sw  & 97.18 & \textbf{97.27} & 97.22 & 97.00 \\
     \bottomrule
   \end{tabular}
+
+  \vspace{0.65em}
+  {\scriptsize Mean\,$\pm$\,std ($N{=}15$). All models: hidden width 32 (Sec.~III-B).}
 \end{table}
 
-\subsection{On-Device Performance on ESP32-C3}
+\subsection{TCN Compression Under K-Fold Cross-Validation}
 
-Table~\ref{tab:esp32} reports latency from 1000 timed \emph{Invoke()} calls on a fixed synthetic
-replay window (50$\times$12, normalized with training-set statistics). Prune50 exports as a
-\emph{float32} TFLite graph (same operator path as FP32), so on-device latency remains
-$\sim$260~ms despite fewer parameters; full-width INT8 uses integer kernels but still processes
-all 32 hidden channels ($\sim$257~ms). INT8+Prune50 combines integer ops with a halved channel
-width, yielding 69.4~ms mean (p95 69.4~ms)---the only configuration practical for periodic
-inference at 50--100~ms intervals.
+Table~\ref{tab:kfold-compression} reports the primary compression results aggregated over
+$N{=}15$ matched fold$\times$seed pairs, with paired Wilcoxon signed-rank tests against the FP32
+reference (same checkpoints, no retraining).
 
-\begin{table}[!t]
-  \caption{On-Device Inference Performance on ESP32-C3 (160~MHz, Tensor Arena 120~KB, 1000 Trials)}
-  \label{tab:esp32}
-  \centering
-  \footnotesize
-  \begin{tabular}{@{}lcccc@{}}
-    \toprule
-    \textbf{Config} & \textbf{Mean} & \textbf{p95} & \textbf{TFLite} & \textbf{Min Heap} \\
-    & \textbf{(ms)} & \textbf{(ms)} & \textbf{(KB)} & \textbf{(KB)} \\
-    \midrule
-    FP32 & 850.6 & 850.6 & 49.2 & 156 \\
-    INT8 & 256.8 & 256.8 & 18.9 & 156 \\
-    Prune50 & 260.0 & 260.0 & 20.3 & 156 \\
-    INT8+Prune50 & \textbf{69.4} & \textbf{69.4} & \textbf{11.6} & 156 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+\input{tables/kfold_compression}
 
-\subsection{Pareto Front and Phase Degradation}
+\textbf{INT8 quantization is statistically indistinguishable from FP32.}
+INT8 attains $90.88\%\pm1.47\%$ macro F1 ($+0.01$~pp vs.\ FP32; Wilcoxon $p{=}0.30$) with an
+estimated payload of ${\sim}13.0$~KB (${\sim}3.4{\times}$ smaller than FP32). Per-phase F1 changes
+are at most 0.03~pp (PSw: $82.75\%$ vs.\ $82.72\%$), confirming that 8-bit weight precision is
+sufficient for this TCN under the PyTorch QDQ proxy.
+
+\textbf{Pruning severity trades size for accuracy in a monotonic pattern.}
+Prune25 (${\sim}4.3$~KB) reduces macro F1 by 3.25~pp ($87.62\%\pm1.45\%$, $p{<}0.001$), with the
+largest phase-specific loss in LR ($-$6.98~pp) and PSw ($-$3.75~pp).
+Prune50 (${\sim}13.1$~KB) costs 1.47~pp ($89.40\%\pm1.43\%$, $p{<}0.001$).
+Prune75 (${\sim}26.4$~KB) costs 0.70~pp ($90.17\%\pm1.30\%$, $p{<}0.001$).
+All pruned configs remain significantly below FP32 at $\alpha{=}0.05$, but the effect size shrinks
+as more channels are retained.
+
+\textbf{Combined INT8+Prune50 minimizes size at a measurable accuracy cost.}
+INT8+Prune50 (${\sim}5.3$~KB, smallest ESP32-deployable point) achieves
+$89.33\%\pm1.36\%$ macro F1 ($-$1.54~pp, $p{=}1.2{\times}10^{-4}$), with PSw F1 falling to
+$80.93\%\pm2.00\%$ ($-$1.79~pp).
+
+Table~\ref{tab:pareto-grid} summarizes the extended grid with parameter counts and payload sizes.
+Among non-dominated configurations, INT8 offers the best accuracy--size trade-off; INT8+Prune50
+targets minimum memory when a ${\sim}1.5$~pp macro F1 reduction is acceptable.
+
+\IfFileExists{tables/ablation_pareto.tex}{\input{tables/ablation_pareto}}{}
+
+\subsection{Fine-Tuning Schedule Ablation}
+
+Table~\ref{tab:finetune-ablation} isolates whether accuracy loss under Prune50 reflects an
+insufficient post-prune recovery budget rather than an inherent pruning limit. With the default
+5-epoch fine-tune, Prune50 macro F1 is 1.47~pp below FP32 ($p{<}0.001$). Extending fine-tuning to
+15 epochs recovers 0.43~pp ($89.83\%\pm1.54\%$, $p{=}6.1{\times}10^{-4}$ vs.\ FP32), and 50 epochs
+recovers 0.94~pp ($90.34\%\pm1.11\%$, $p{=}0.015$ vs.\ FP32). PSw F1 improves from
+$81.13\%\pm1.97\%$ (5~ep) to $82.23\%\pm1.82\%$ (50~ep), approaching the FP32 baseline
+($82.72\%\pm2.54\%$). Residual macro F1 gap at 50 epochs ($-$0.53~pp, still significant at
+$\alpha{=}0.05$) indicates that structured 50\% channel removal retains a small but reproducible
+information loss beyond what longer fine-tuning can recover.
+
+\IfFileExists{tables/ablation_finetune.tex}{\input{tables/ablation_finetune}}{}
+
+\subsection{Compression Trade-offs and Phase Degradation}
+
+Figs.~\ref{fig:pareto} and~\ref{fig:phase-degradation} qualitatively illustrate the
+accuracy--size trade-off and phase-specific degradation patterns on a single fold$\times$seed pair
+(fold~0, seed~42). These figures are consistent with the k-fold aggregates in
+Tables~\ref{tab:kfold-compression}--\ref{tab:finetune-ablation}: INT8 is near-lossless, structured
+pruning disproportionately affects transition phases (LR, PSw), and INT8+Prune50 occupies the
+smallest footprint at the largest accuracy cost.
 
 \begin{figure}[!t]
   \centering
   \includegraphics[width=\linewidth]{figures/pareto_front.pdf}
-  \caption{Pareto front of macro F1-score vs.\ deployment size (KB). Filled markers connected by
-  the solid line are Pareto-optimal; Prune50 (hollow marker) is dominated by INT8, which achieves
-  both a smaller footprint and higher macro F1.}
+  \caption{Illustrative Pareto front (fold~0, seed~42; $N{=}1$). K-fold aggregates with Wilcoxon
+  tests appear in Tables~\ref{tab:kfold-compression} and~\ref{tab:pareto-grid}. INT8 (filled
+  marker) dominates Prune50 on both size and macro F1 in this run.}
   \label{fig:pareto}
 \end{figure}
 
 \begin{figure}[!t]
   \centering
   \includegraphics[width=\linewidth]{figures/phase_degradation.pdf}
-  \caption{Phase-specific test accuracy under compression. (a) Absolute per-phase accuracy for all
-  four configurations, connected in order of increasing compression (FP32 $\to$ INT8 $\to$ Prune50
-  $\to$ INT8+Prune50). (b) Accuracy change relative to the FP32 baseline, highlighting the larger
-  degradation in the transition phases LR and PSw under structured pruning.}
+  \caption{Phase-specific test \emph{accuracy} under compression (fold~0, seed~42 illustration).
+  Panel~(b) shows that LR accuracy can increase under pruning even when LR F1 falls
+  (Table~\ref{tab:kfold-compression}), motivating macro and phase F1 over accuracy alone.}
   \label{fig:phase-degradation}
 \end{figure}
 
-Fig.~\ref{fig:pareto} plots macro F1 against estimated deployment size for all four compression
-configs. The Pareto-optimal frontier connects FP32, INT8, and INT8+Prune50: Prune50 is
-\emph{dominated} by INT8, which is both smaller (12.7 vs.\ 13.4~KB estimated) and more accurate
-(91.43 vs.\ 88.73\% macro F1). INT8+Prune50 occupies the smallest-size corner (5.4~KB estimated,
-11.6~KB TFLite) at a 3.05~pp macro F1 cost relative to FP32.
+Fig.~\ref{fig:phase-degradation} complements Tables~\ref{tab:kfold-compression}
+and~\ref{tab:finetune-ablation} by visualizing per-phase \emph{accuracy} rather than F1, highlighting
+that accuracy alone can mask precision loss on minority transition phases.
 
-Fig.~\ref{fig:phase-degradation} complements the F1 tables by visualizing phase-specific
-\emph{accuracy} along the same compression path (FP32 $\to$ INT8 $\to$ Prune50 $\to$
-INT8+Prune50). INT8 changes each phase accuracy by at most 0.5~pp, whereas structured pruning
-produces larger swings---notably $-$2.0 to $-$2.3~pp on LS and Sw under INT8+Prune50. Panel~(b)
-shows the change relative to FP32 and makes the asymmetry visible: LR and PSw accuracy can
-\emph{increase} under pruning even when their F1 scores fall (Tables~\ref{tab:compression-results}
-and~\ref{tab:phase-degradation}), so accuracy alone can mask precision loss on minority transition
-phases.
+\subsection{On-Device Performance on ESP32-C3}
+\label{sec:esp32-results}
+
+On-device latency and SRAM measurements require exporting each compressed TCN checkpoint to
+TFLite and re-running the ESP32-C3 benchmark pipeline. Table~\ref{tab:esp32} is reserved for
+these results; prior measurements from an earlier export pipeline are not reported here because
+the deployment backbone changed to Standard TCN.
+
+\input{tables/esp32_placeholder}
 
 \section{Discussion}
 \label{sec:discussion}
 
 \subsection{Variance Across Folds and Seeds}
 
-Full Track~B evaluation aggregates metrics over $K{=}5$ folds and three random seeds.
-We decompose spread into $\sigma_{\mathrm{fold}}$ (std.\ of fold means, capturing subject
-heterogeneity) and $\sigma_{\mathrm{seed}}$ (std.\ of seed means, capturing initialization
-noise). When $\sigma_{\mathrm{fold}} \gg \sigma_{\mathrm{seed}}$, performance differences
-primarily reflect which subjects appear in each test fold rather than training stochasticity;
-near-zero $\sigma_{\mathrm{seed}}$ under INT8 quantization indicates stable compression
-outcomes across seeds.
+Track~B aggregates 15 runs per model ($K{=}5$ folds$\times$3 seeds). For TCN,
+$\sigma_{\mathrm{fold}}{=}1.38$~pp exceeds $\sigma_{\mathrm{seed}}{=}0.28$~pp, so performance
+spread primarily reflects which subjects appear in each test fold rather than initialization noise.
+Paired Wilcoxon tests on matched fold$\times$seed pairs show TCN statistically equivalent to
+Transformer ($\Delta{=}{+}0.04$~pp, $p{=}0.80$) and LSTM+GRU ($+0.28$~pp, $p{=}0.17$), but
+significantly higher than CNN1D ($+0.53$~pp, $p{=}0.004$).
 
 \subsection{Vulnerability of Transition Phases}
 
-Contrary to the initial hypothesis that LR would degrade first, PSw F1 showed the largest
-drop under structured pruning ($-$3.32~pp for Prune50 and $-$3.43~pp for INT8+Prune50), while INT8
-quantization alone changed phase F1 by at most 0.04~pp. PSw is a short transition window whose
-decision boundary likely depends on finer temporal detail removed when hidden channels are halved.
-Notably, LR accuracy increased under pruning (+2.36~pp, Table~\ref{tab:phase-degradation}) even as
-LR F1 fell (Table~\ref{tab:compression-results}), indicating reduced precision despite higher
-recall---a pattern invisible when reporting accuracy alone.
+Across k-fold compression (Table~\ref{tab:kfold-compression}), PSw F1 shows the largest
+pruning-related degradation relative to FP32: $-$3.75~pp (Prune25), $-$1.59~pp (Prune50, 5~ep),
+and $-$1.79~pp (INT8+Prune50), whereas INT8 quantization changes PSw F1 by only $+0.03$~pp
+($p{=}0.30$ vs.\ FP32). LR F1 is equally sensitive under aggressive pruning ($-$6.98~pp for
+Prune25). The fine-tune ablation (Table~\ref{tab:finetune-ablation}) shows that extended recovery
+training partially restores PSw F1 ($81.13\%\to82.23\%$ from 5 to 50 epochs) but does not fully
+close the gap to FP32 ($82.72\%$). PSw is a short transition window whose decision boundary likely
+depends on finer temporal detail removed when hidden channels are pruned.
 
 \subsection{Role of Dilated Convolutions Under Compression}
 
-INT8 quantization preserved macro F1 within 0.07~pp of FP32, suggesting that TinyTCN's dilated
-receptive field and narrow hidden width (32 channels) remain sufficient under 8-bit weight
-precision. Pruning, by contrast, removes representational capacity and disproportionately affects
-the already difficult PSw class (baseline F1 82.99\%, the lowest among the four phases).
+INT8 quantization preserved macro F1 within 0.01~pp of FP32 across $N{=}15$ k-fold runs
+(Wilcoxon $p{=}0.30$), suggesting that TCN's dilated receptive field and narrow hidden width
+(32 channels) remain sufficient under 8-bit weight precision. Structured pruning removes
+representational capacity: even with 50-epoch fine-tuning, Prune50 remains 0.53~pp below FP32
+($p{=}0.015$), and PSw---already the lowest baseline phase (82.72\% F1)---is disproportionately
+affected.
 
 \subsection{Efficiency-Accuracy Trade-off}
 
-The Pareto analysis (Fig.~\ref{fig:pareto}) shows INT8 as the dominant accuracy-preserving
-compression point (12.7~KB estimated, 91.43\% macro F1). INT8+Prune50 occupies the smallest-size
-corner (5.4~KB estimated, 11.6~KB TFLite) at 88.45\% macro F1. For deployment, this trade-off must
-be paired with on-device latency: on ESP32-C3, only INT8+Prune50 achieved sub-100~ms inference
-(69.4~ms mean), whereas full-width INT8 required 256.8~ms despite its superior accuracy.
+The k-fold Pareto analysis (Tables~\ref{tab:kfold-compression} and~\ref{tab:pareto-grid})
+identifies INT8 (${\sim}13.0$~KB, $+0.01$~pp macro F1, $p{=}0.30$) as the preferred
+near-lossless compression point for ESP32-C3 deployment. INT8+Prune50 (${\sim}5.3$~KB) trades
+1.54~pp macro F1 ($p{=}1.2{\times}10^{-4}$) for minimum memory. Prune75 offers a middle ground
+(${\sim}26.4$~KB, $-$0.70~pp) when pruning without quantization is desired. Deployment latency
+must be paired with these accuracy/size trade-offs; Table~\ref{tab:esp32} remains pending TCN
+TFLite export and ESP32-C3 re-measurement.
 
 \subsection{Feasibility for Real-World Wearable Deployment}
 
-At 69.4~ms per window, INT8+Prune50 is suitable for coaching and logging use cases when inference is
-scheduled every 50--100~ms (stride 5--10 at 100~Hz). It does not satisfy a strict 100~Hz streaming
-budget (10~ms). Host-side TFLite smoke tests confirmed matching argmax predictions for all exported
-configs on a fixed replay window, supporting the validity of the on-device benchmark pipeline.
+Once Table~\ref{tab:esp32} is populated, latency can be compared against the intended inference
+schedule (e.g., every 50--100~ms at 100~Hz with stride 5--10). Host-side TFLite smoke validation
+will be re-run after TCN export to confirm argmax agreement between PyTorch and on-device graphs.
 
 \subsection{Limitations}
 
 \begin{itemize}
   \item Results are derived from a single public dataset (NONAN GaitPrint); generalization to other
         populations, walking speeds, or pathological gait patterns requires further validation.
-  \item Baseline and compression tables use the same $K{=}5\times3$ protocol; exploratory
-        fine-tune ablations and prune-ratio grids (25/50/75\%) on a single split are reported
-        separately and not used for significance claims.
-  \item Test stride~1 yields highly overlapping windows ($\sim$2.58M windows on the legacy
-        6-subject test split); per-subject blocked aggregation mitigates inflated effective sample
-        size.
-  \item Full k-fold aggregation and variance decomposition (fold vs.\ seed) are reported in the
-        supplementary analysis pipeline (\texttt{analysis/aggregate\_runs.py}).
-  \item On-device benchmarks used a synthetic replay window, not live IMU streaming; end-to-end
+  \item ESP32-C3 on-device latency and SRAM headroom (Table~\ref{tab:esp32}) were pending at the
+        time of writing; PyTorch-side conclusions await TFLite export confirmation.
+  \item Test stride~1 yields highly overlapping windows; per-subject blocked aggregation mitigates
+        inflated effective sample size, but Wilcoxon tests operate on fold$\times$seed aggregates
+        ($N{=}15$) rather than subject-blocked scores.
+  \item On-device benchmarks will use a synthetic replay window, not live IMU streaming; end-to-end
         latency with BLE acquisition remains unmeasured.
   \item PyTorch INT8 evaluation uses a quantize-dequantize weight proxy; deployed INT8 TFLite models
         use full-integer PTQ and may differ slightly in logits while preserving argmax in our smoke
         tests.
   \item Power consumption (mW) was not measured on ESP32-C3.
-  \item Latency used TFLite Micro reference kernels (Chirale\_TensorFlowLite); optimized INT8
+  \item Latency will use TFLite Micro reference kernels (Chirale\_TensorFlowLite); optimized INT8
         kernels could reduce inference time further.
 \end{itemize}
 
 \section{Conclusion}
 \label{sec:conclusion}
 
-This study systematically evaluated how INT8 quantization and structured 50\% channel pruning
-affect phase-specific accuracy in TinyTCN for gait phase detection. On 2.58M test windows, INT8
-preserved 91.43\% macro F1 (vs.\ 91.50\% FP32) at roughly one-third the estimated payload size,
-whereas INT8+Prune50 reduced size to 5.4~KB (11.6~KB TFLite) at 88.45\% macro F1 with the largest
-F1 loss concentrated in PSw. Disaggregating metrics by phase revealed that pruning can inflate phase
-accuracy while lowering F1---an important distinction for transition-phase monitoring. On
-ESP32-C3, INT8+Prune50 ran in 69.4~ms per 0.5~s window, demonstrating feasibility for low-cost
-wearable monitoring at moderate update rates. Future work should validate live IMU streaming,
-measure power, and extend the analysis to pathological gait populations.
+This study systematically evaluated how INT8 quantization and structured channel pruning affect
+phase-specific accuracy in a Standard TCN for gait phase detection. Under $K{=}5\times3$
+cross-validation, TCN achieved $90.87\%\pm1.47\%$ macro F1---the highest mean among compared
+architectures while remaining microcontroller-deployable. K-fold compression with paired Wilcoxon
+tests ($N{=}15$ per config) showed that INT8 is statistically equivalent to FP32 ($p{=}0.30$),
+whereas structured pruning incurs significant but severity-dependent losses (Prune50 at 5 fine-tune
+epochs: $-$1.47~pp, $p{<}0.001$; Prune75: $-$0.70~pp, $p{<}0.001$). Fine-tune schedule ablation
+revealed that 0.94~pp of the Prune50 deficit is recoverable with longer training (50 epochs:
+$90.34\%\pm1.11\%$, $p{=}0.015$ vs.\ FP32), implicating insufficient recovery budget---not pruning
+alone---as a contributor to early results; a residual 0.53~pp gap nonetheless persists. PSw F1 was
+the most compression-sensitive transition phase. INT8+Prune50 (${\sim}5.3$~KB) offers minimum
+memory at a 1.54~pp cost ($p{=}1.2{\times}10^{-4}$). Future work will export TCN to TFLite,
+measure ESP32-C3 latency and power, and validate live IMU streaming.
 
 \section*{Acknowledgment}
 

@@ -1,0 +1,23 @@
+% Placeholder — re-export and re-measure after TCN k-fold compression completes.
+% bash experiments/esp32/scripts/export_all.sh  (then flash + benchmark)
+\begin{table}[!t]
+  \centering
+  \caption{On-Device Inference on ESP32-C3 (TCN export pending)}
+  \label{tab:esp32}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.18}
+  \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}} l *{4}{c} @{}}
+    \toprule
+    \textbf{Config} & \textbf{Mean (ms)} & \textbf{p95 (ms)} & \textbf{TFLite (KB)} & \textbf{Heap (KB)} \\
+    \midrule
+    FP32 & --- & --- & --- & --- \\
+    INT8 & --- & --- & --- & --- \\
+    Prune50 & --- & --- & --- & --- \\
+    INT8+Prune50 & --- & --- & --- & --- \\
+    \bottomrule
+  \end{tabular*}
+
+  \vspace{0.65em}
+  {\scriptsize Pending TCN TFLite export and ESP32-C3 re-measurement (160~MHz; arena 120~KB; 1000 trials).}
+\end{table}

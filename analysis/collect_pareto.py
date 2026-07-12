@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build Pareto manifest from TinyTCN FP32 run + compression overrides."""
+"""Build Pareto manifest from TCN FP32 run + compression overrides."""
 
 from __future__ import annotations
 
@@ -13,8 +13,8 @@ from typing import Any
 RESEARCH_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RESEARCH_ROOT))
 
-from analysis.model_profile import count_parameters, estimate_sizes, load_tinytcn_from_checkpoint  # noqa: E402
-from shared.paths import COMPRESSION_RESULTS, TINYTCN_RUNS  # noqa: E402
+from analysis.model_profile import count_parameters, estimate_sizes, load_model_from_checkpoint  # noqa: E402
+from shared.paths import COMPRESSION_RESULTS, TCN_RUNS  # noqa: E402
 
 PHASES = ("LR", "LS", "PSw", "Sw")
 
@@ -109,7 +109,7 @@ def estimates_from_previous_manifest(path: Path):
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--checkpoint-dir", type=Path, default=TINYTCN_RUNS / "fp32_100hz")
+    p.add_argument("--checkpoint-dir", type=Path, default=TCN_RUNS / "fp32_100hz")
     p.add_argument("--overrides", type=Path, default=COMPRESSION_RESULTS / "overrides.json")
     p.add_argument("--metrics", type=Path, default=COMPRESSION_RESULTS / "results" / "metrics.json")
     p.add_argument("--out", type=Path, default=COMPRESSION_RESULTS / "manifest.json")
@@ -118,7 +118,7 @@ def main() -> None:
     ckpt = args.checkpoint_dir / "best_model.pt"
     previous_params, previous_points = estimates_from_previous_manifest(args.out)
     if ckpt.exists():
-        model = load_tinytcn_from_checkpoint(ckpt)
+        model = load_model_from_checkpoint(ckpt)
         params = count_parameters(model)
         estimates = [est.to_dict() for est in estimate_sizes(params)]
     elif previous_params is not None and previous_points is not None:

@@ -1,6 +1,6 @@
 {
-  "checkpoint_dir": "experiments/tinytcn/runs/fp32_100hz",
-  "params": 10948,
+  "checkpoint_dir": "experiments/tcn/runs/fp32_100hz",
+  "params": 11300,
   "points": [
     {
       "name": "FP32",

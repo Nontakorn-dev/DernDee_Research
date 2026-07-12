@@ -1,10 +1,10 @@
 # Research Protocol
 
-This document is the canonical workflow for the paper **Impact of Deep Compression Techniques on Phase-Specific Accuracy in TinyTCN for Real-Time Gait Detection**.
+This document is the canonical workflow for the paper **Impact of Deep Compression Techniques on Phase-Specific Accuracy in TCN for Real-Time Gait Detection**.
 
 ## Research question
 
-When TinyTCN is compressed for microcontroller deployment, do transition phases (LR and PSw) lose more accuracy than steadier phases (LS and Sw)?
+When TCN is compressed for microcontroller deployment, do transition phases (LR and PSw) lose more accuracy than steadier phases (LS and Sw)?
 
 The first source of truth is PyTorch evaluation. ESP32-C3 latency and SRAM are reported only after hardware measurement.
 
@@ -79,12 +79,14 @@ Uses FP32 checkpoint from matching fold×seed:
 
 ```bash
 python experiments/compression/run_eval.py \
-  --checkpoint experiments/tinytcn/runs/fold0_seed42_fp32_100hz/best_model.pt \
+  --checkpoint experiments/tcn/runs/fold0_seed42_fp32_100hz/best_model.pt \
   --split-file shared/splits/folds/fold0.csv \
   --out-dir experiments/compression/runs/fold0_seed42
 ```
 
-Configs: `FP32`, `INT8`, `Prune50`, `INT8+Prune50`
+Configs (8 × 15 = 120 jobs): `FP32`, `INT8`, `Prune25`, `Prune50`, `Prune75`,
+`INT8+Prune50`, `Prune50_ft15`, `Prune50_ft50` (default Prune50 fine-tune: 5 epochs).
+INT4 is excluded (not deployable on ESP32-C3).
 
 ## Track A (exploratory, single split)
 

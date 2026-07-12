@@ -13,9 +13,14 @@ import numpy as np
 from scipy import stats
 
 RESEARCH_ROOT = Path(__file__).resolve().parents[1]
+import sys
+
+sys.path.insert(0, str(RESEARCH_ROOT))
+
 PHASES = ("LR", "LS", "PSw", "Sw")
-BASELINE_MODELS = ("tinytcn", "cnn1d", "tcn", "lstm_gru", "transformer")
-COMPRESSION_CONFIGS = ("FP32", "INT8", "Prune50", "INT8+Prune50")
+BASELINE_MODELS = ("tcn", "cnn1d", "lstm_gru", "transformer", "cnn_lstm")
+COMPRESSION_MODELS = ("tcn",)
+from experiments.compression.kfold_configs import COMPRESSION_CONFIGS  # noqa: E402
 DEFAULT_SEEDS = (42, 123, 456)
 
 
@@ -27,8 +32,8 @@ def baseline_run_dir(model: str, fold: int, seed: int) -> Path:
     return RESEARCH_ROOT / "experiments" / model / "runs" / f"fold{fold}_seed{seed}_fp32_100hz"
 
 
-def compression_run_dir(fold: int, seed: int, config: str) -> Path:
-    return RESEARCH_ROOT / "experiments" / "compression" / "runs" / f"fold{fold}_seed{seed}" / config
+def compression_run_dir(model: str, fold: int, seed: int, config: str) -> Path:
+    return RESEARCH_ROOT / "experiments" / "compression" / "runs" / model / f"fold{fold}_seed{seed}" / config
 
 
 def read_metrics(path: Path) -> dict[str, Any] | None:
@@ -172,19 +177,24 @@ def aggregate_baselines(*, n_folds: int, seeds: tuple[int, ...]) -> dict[str, An
             },
         }
 
-    ref = scores[BASELINE_MODELS.index("tinytcn")]
+    ref = scores[BASELINE_MODELS.index("tcn")]
     comparisons: dict[str, Any] = {}
     for mi, model in enumerate(BASELINE_MODELS):
-        if model == "tinytcn":
+        if model == "tcn":
             continue
         comparisons[model] = paired_test(ref, scores[mi])
-    results["tinytcn_vs_baselines"] = comparisons
+    results["tcn_vs_baselines"] = comparisons
     return results
 
 
-def aggregate_compression(*, n_folds: int, seeds: tuple[int, ...]) -> dict[str, Any]:
+def aggregate_compression_for_model(
+    model: str,
+    *,
+    n_folds: int,
+    seeds: tuple[int, ...],
+) -> dict[str, Any]:
     scores, missing = collect_scores(
-        lambda config, fold, seed: compression_run_dir(fold, seed, config),
+        lambda config, fold, seed: compression_run_dir(model, fold, seed, config),
         labels=COMPRESSION_CONFIGS,
         n_folds=n_folds,
         seeds=seeds,
@@ -195,7 +205,7 @@ def aggregate_compression(*, n_folds: int, seeds: tuple[int, ...]) -> dict[str, 
     all_missing = set(missing)
     for phase in PHASES:
         phase_scores[phase], phase_missing = collect_scores(
-            lambda config, fold, seed: compression_run_dir(fold, seed, config),
+            lambda config, fold, seed: compression_run_dir(model, fold, seed, config),
             labels=COMPRESSION_CONFIGS,
             n_folds=n_folds,
             seeds=seeds,
@@ -204,7 +214,7 @@ def aggregate_compression(*, n_folds: int, seeds: tuple[int, ...]) -> dict[str, 
         )
         all_missing.update(phase_missing)
 
-    results: dict[str, Any] = {"configs": {}, "missing_runs": sorted(all_missing)}
+    results: dict[str, Any] = {"model": model, "configs": {}, "missing_runs": sorted(all_missing)}
     for ci, config in enumerate(COMPRESSION_CONFIGS):
         results["configs"][config] = {
             "macro_f1": summarize_scores(scores[ci]),
@@ -222,6 +232,13 @@ def aggregate_compression(*, n_folds: int, seeds: tuple[int, ...]) -> dict[str, 
         comparisons[config] = paired_test(ref, scores[ci])
     results["fp32_vs_compression"] = comparisons
     return results
+
+
+def aggregate_compression(*, n_folds: int, seeds: tuple[int, ...]) -> dict[str, Any]:
+    return {
+        model: aggregate_compression_for_model(model, n_folds=n_folds, seeds=seeds)
+        for model in COMPRESSION_MODELS
+    }
 
 
 def main() -> None:
@@ -243,7 +260,23 @@ def main() -> None:
     args.out.write_text(json.dumps(payload, indent=2))
     print(f"Wrote {args.out}")
     print(f"Missing baseline runs: {len(payload['baselines']['missing_runs'])}")
-    print(f"Missing compression runs: {len(payload['compression']['missing_runs'])}")
+    print(f"Missing compression runs: {sum(len(v['missing_runs']) for v in payload['compression'].values())}")
+
+    try:
+        import importlib.util
+
+        export_path = RESEARCH_ROOT / "analysis" / "export_kfold_compression_tex.py"
+        spec = importlib.util.spec_from_file_location("export_kfold_compression_tex", export_path)
+        if spec and spec.loader:
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            mod.write_kfold_compression_table(
+                RESEARCH_ROOT / "paper" / "tables" / "kfold_compression.tex",
+                summary_path=args.out,
+                model="tcn",
+            )
+    except Exception as exc:  # pragma: no cover - optional paper export
+        print(f"Skipped k-fold compression TeX export: {exc}")
 
 
 if __name__ == "__main__":

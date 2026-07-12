@@ -1,4 +1,4 @@
-"""Estimate deployment size (KB) for TinyTCN compression configs."""
+"""Estimate deployment size (KB) for TCN compression configs."""
 
 from __future__ import annotations
 
@@ -9,10 +9,10 @@ import sys
 import torch
 
 RESEARCH_ROOT = Path(__file__).resolve().parents[1]
-TINYTCN_DIR = RESEARCH_ROOT / "experiments" / "tinytcn"
-sys.path.insert(0, str(TINYTCN_DIR))
+sys.path.insert(0, str(RESEARCH_ROOT / "shared"))
+sys.path.insert(0, str(RESEARCH_ROOT))
 
-from model import TinyTCN  # noqa: E402
+from model_registry import build_model_from_config  # noqa: E402
 
 
 @dataclass
@@ -30,13 +30,17 @@ def count_parameters(model: torch.nn.Module) -> int:
     return sum(p.numel() for p in model.parameters())
 
 
-def load_tinytcn_from_checkpoint(path: Path) -> TinyTCN:
+def load_model_from_checkpoint(path: Path) -> torch.nn.Module:
     ckpt = torch.load(path, map_location="cpu", weights_only=False)
     cfg = ckpt.get("config", {})
-    model = TinyTCN(
+    model_name = str(cfg.get("model_name", "tcn"))
+    model_kwargs = dict(cfg.get("model_kwargs", {}))
+    model_kwargs.setdefault("n_classes", int(cfg.get("n_classes", 4)))
+    model_kwargs.setdefault("hidden", int(cfg.get("hidden", 32)))
+    model = build_model_from_config(
+        model_name,
         n_channels=int(cfg.get("n_channels", 12)),
-        n_classes=int(cfg.get("n_classes", 4)),
-        hidden=int(cfg.get("hidden", 32)),
+        model_kwargs=model_kwargs,
     )
     model.load_state_dict(ckpt["model_state_dict"])
     return model

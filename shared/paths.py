@@ -8,7 +8,7 @@ SHARED_SPLITS = RESEARCH_ROOT / "shared" / "splits"
 PAPER_DIR = RESEARCH_ROOT / "paper"
 PAPER_FIGURES = PAPER_DIR / "figures"
 EXPERIMENTS = RESEARCH_ROOT / "experiments"
-TINYTCN_RUNS = EXPERIMENTS / "tinytcn" / "runs"
+TCN_RUNS = EXPERIMENTS / "tcn" / "runs"
 COMPRESSION_RESULTS = EXPERIMENTS / "compression"
 
 

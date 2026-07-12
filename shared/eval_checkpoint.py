@@ -36,9 +36,6 @@ def load_checkpoint(checkpoint_path: Path) -> dict[str, Any]:
 def _resolve_model_name(cfg: dict[str, Any], checkpoint_path: Path) -> str:
     if "model_name" in cfg:
         return str(cfg["model_name"])
-    # Backward compatibility with TinyTCN-only checkpoints.
-    if "tinytcn" in checkpoint_path.as_posix():
-        return "tinytcn"
     raise KeyError(
         "Checkpoint config missing model_name. Retrain with the shared train_runner "
         "or pass a checkpoint produced by experiments/<model>/train.py."
@@ -198,7 +195,7 @@ def default_checkpoint_for(model_name: str) -> Path:
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--model", type=str, default="tinytcn", help="Model name for default checkpoint path.")
+    p.add_argument("--model", type=str, default="tcn", help="Model name for default checkpoint path.")
     p.add_argument("--checkpoint", type=Path, default=None)
     p.add_argument("--data-root", type=Path, default=DATA_XY)
     p.add_argument("--split-file", type=Path, default=SHARED_SPLITS / "subject_split.csv")

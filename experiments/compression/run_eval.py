@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Evaluate TinyTCN compression configs with PyTorch-first accuracy proxies.
+"""Evaluate TCN-family compression configs with PyTorch-first accuracy proxies.
 
-This runner measures the research question first: how much each gait phase
-degrades after compression. ESP32/TFLite artifacts are a later measurement
-phase and should not be inferred from these PyTorch metrics.
+Supports Standard TCN baseline, INT8 quantization proxy,
+structured channel pruning at configurable keep ratios, and optional prune fine-tuning.
 """
 
 from __future__ import annotations
@@ -24,9 +23,9 @@ from tqdm.auto import tqdm
 
 RESEARCH_ROOT = Path(__file__).resolve().parents[2]
 SHARED = RESEARCH_ROOT / "shared"
-TINYTCN_DIR = RESEARCH_ROOT / "experiments" / "tinytcn"
+COMPRESSION_DIR = RESEARCH_ROOT / "experiments" / "compression"
 sys.path.insert(0, str(SHARED))
-sys.path.insert(0, str(TINYTCN_DIR))
+sys.path.insert(0, str(COMPRESSION_DIR))
 sys.path.insert(0, str(RESEARCH_ROOT))
 
 from data.dataset import probe_label_column  # noqa: E402
@@ -38,20 +37,27 @@ from eval_checkpoint import (  # noqa: E402
     norm_from_checkpoint,
 )
 from gait_labels import IMU_CHANNEL_SETS  # noqa: E402
-from model import TinyTCN  # noqa: E402
-from paths import COMPRESSION_RESULTS, DATA_XY, SHARED_SPLITS, TINYTCN_RUNS  # noqa: E402
+from paths import COMPRESSION_RESULTS, DATA_XY, EXPERIMENTS, SHARED_SPLITS  # noqa: E402
+from prune_utils import prune_hidden_channels  # noqa: E402
 from training import make_loader, pick_device  # noqa: E402
 
+DEFAULT_CONFIGS = ("FP32", "INT8", "Prune50", "INT8+Prune50")
+SUPPORTED_MODELS = ("tcn",)
 
-CONFIGS = ("FP32", "INT8", "Prune50", "INT8+Prune50")
 
+def default_checkpoint(model_name: str) -> Path:
+    return EXPERIMENTS / model_name / "runs" / "fp32_100hz" / "best_model.pt"
 
 def prune_config_name(keep_ratio: float) -> str:
     return f"Prune{int(round(keep_ratio * 100))}"
 
 
-def combined_config_name(keep_ratio: float) -> str:
-    return f"INT8+{prune_config_name(keep_ratio)}"
+def quant_config_name(bits: int) -> str:
+    return f"INT{bits}"
+
+
+def combined_config_name(bits: int, keep_ratio: float) -> str:
+    return f"INT{bits}+{prune_config_name(keep_ratio)}"
 
 
 def count_parameters(model: nn.Module) -> int:
@@ -82,48 +88,6 @@ def quantize_dequantize_weights(model: nn.Module, *, bits: int) -> nn.Module:
             if isinstance(module, (nn.Conv1d, nn.Linear)):
                 module.weight.copy_(quantize_dequantize_tensor(module.weight, bits))
     return q_model
-
-
-def select_hidden_channels(model: TinyTCN, keep_count: int) -> torch.Tensor:
-    with torch.no_grad():
-        importance = torch.zeros(model.head[2].in_features)
-        for block in model.stem:
-            conv = block.conv
-            importance += conv.weight.detach().abs().sum(dim=(1, 2)).cpu()
-        keep = torch.topk(importance, k=keep_count, largest=True).indices
-        return torch.sort(keep).values
-
-
-def _copy_bn(dst: dict[str, torch.Tensor], src: dict[str, torch.Tensor], prefix: str, keep: torch.Tensor) -> None:
-    for name in ("weight", "bias", "running_mean", "running_var"):
-        dst[f"{prefix}.{name}"] = src[f"{prefix}.{name}"][keep].clone()
-    dst[f"{prefix}.num_batches_tracked"] = src[f"{prefix}.num_batches_tracked"].clone()
-
-
-def prune_tinytcn_hidden(model: TinyTCN, *, keep_ratio: float = 0.5) -> TinyTCN:
-    old_hidden = model.head[2].in_features
-    new_hidden = max(1, int(round(old_hidden * keep_ratio)))
-    keep = select_hidden_channels(model, new_hidden)
-
-    src = model.state_dict()
-    pruned = TinyTCN(n_channels=model.stem[0].conv.in_channels, n_classes=model.head[2].out_features, hidden=new_hidden)
-    dst = pruned.state_dict()
-
-    dst["stem.0.conv.weight"] = src["stem.0.conv.weight"][keep].clone()
-    dst["stem.0.conv.bias"] = src["stem.0.conv.bias"][keep].clone()
-    _copy_bn(dst, src, "stem.0.bn", keep)
-    dst["stem.0.residual.weight"] = src["stem.0.residual.weight"][keep].clone()
-    dst["stem.0.residual.bias"] = src["stem.0.residual.bias"][keep].clone()
-
-    for idx in (1, 2):
-        dst[f"stem.{idx}.conv.weight"] = src[f"stem.{idx}.conv.weight"][keep][:, keep].clone()
-        dst[f"stem.{idx}.conv.bias"] = src[f"stem.{idx}.conv.bias"][keep].clone()
-        _copy_bn(dst, src, f"stem.{idx}.bn", keep)
-
-    dst["head.2.weight"] = src["head.2.weight"][:, keep].clone()
-    dst["head.2.bias"] = src["head.2.bias"].clone()
-    pruned.load_state_dict(dst)
-    return pruned
 
 
 def finetune_model(
@@ -199,9 +163,11 @@ def save_artifact(
     *,
     config_name: str,
     method_note: str,
+    model_name: str,
     hidden: int | None = None,
 ) -> float:
     cfg = dict(ckpt["config"])
+    cfg["model_name"] = model_name
     if hidden is not None:
         cfg["hidden"] = hidden
     payload = {
@@ -216,32 +182,62 @@ def save_artifact(
     return round(path.stat().st_size / 1024, 2)
 
 
+def parse_config_name(name: str, *, default_keep_ratio: float) -> tuple[str, int | None, float | None]:
+    """Return (kind, quant_bits, keep_ratio) for a config label."""
+    from kfold_configs import normalize_config_label
+
+    base_name, _ = normalize_config_label(name)
+    if base_name == "FP32":
+        return "fp32", None, None
+    if base_name.startswith("INT") and "+" not in base_name:
+        bits = int(base_name.replace("INT", ""))
+        return "quant", bits, None
+    if base_name.startswith("INT") and "+" in base_name:
+        quant_part, prune_part = base_name.split("+", 1)
+        bits = int(quant_part.replace("INT", ""))
+        keep_ratio = int(prune_part.replace("Prune", "")) / 100.0
+        return "quant_prune", bits, keep_ratio
+    if base_name.startswith("Prune"):
+        keep_ratio = int(base_name.replace("Prune", "")) / 100.0
+        return "prune", None, keep_ratio
+    raise ValueError(f"Unknown config {name!r}")
+
+
 def build_config_model(
     name: str,
-    fp32_model: TinyTCN,
+    fp32_model: nn.Module,
     ckpt: dict[str, Any],
     args: argparse.Namespace,
 ) -> tuple[nn.Module, dict[str, Any], int, str]:
-    keep_ratio = float(getattr(args, "keep_ratio", 0.5))
-    if name == "FP32":
+    from kfold_configs import normalize_config_label
+
+    kind, quant_bits, parsed_keep = parse_config_name(name, default_keep_ratio=args.keep_ratio)
+    keep_ratio = args.keep_ratio if parsed_keep is None else parsed_keep
+    _, ft_override = normalize_config_label(name)
+    finetune_epochs = (
+        ft_override if ft_override is not None else args.prune_finetune_epochs
+    )
+
+    if kind == "fp32":
         return copy.deepcopy(fp32_model), copy.deepcopy(ckpt), 32, "FP32 checkpoint evaluation"
-    if name == "INT8":
+    if kind == "quant":
+        assert quant_bits is not None
         return (
-            quantize_dequantize_weights(fp32_model, bits=8),
+            quantize_dequantize_weights(fp32_model, bits=quant_bits),
             copy.deepcopy(ckpt),
-            8,
-            "PyTorch weight quantize-dequantize INT8 accuracy proxy",
+            quant_bits,
+            f"PyTorch weight quantize-dequantize INT{quant_bits} accuracy proxy",
         )
-    if name.startswith("Prune") and not name.startswith("INT8+"):
-        model = prune_tinytcn_hidden(fp32_model, keep_ratio=keep_ratio)
+    if kind == "prune":
+        model = prune_hidden_channels(fp32_model, keep_ratio=keep_ratio)
         pruned_ckpt = copy.deepcopy(ckpt)
-        pruned_ckpt["config"] = dict(pruned_ckpt["config"], hidden=model.head[2].in_features)
+        pruned_ckpt["config"] = dict(pruned_ckpt["config"], hidden=model.head[-1].in_features)
         finetune_model(
             model,
             pruned_ckpt,
             data_root=args.data_root,
             split_file=args.split_file,
-            epochs=args.prune_finetune_epochs,
+            epochs=finetune_epochs,
             batch_size=args.batch_size,
             lr=args.finetune_lr,
             device_name=args.device,
@@ -249,17 +245,18 @@ def build_config_model(
             cache_trials=args.cache_trials,
         )
         pct = int(round(keep_ratio * 100))
-        return model, pruned_ckpt, 32, f"Structured {pct}% hidden-channel prune with fine-tuning"
-    if name.startswith("INT8+Prune"):
-        model = prune_tinytcn_hidden(fp32_model, keep_ratio=keep_ratio)
+        return model, pruned_ckpt, 32, f"Structured {pct}% hidden-channel prune + {finetune_epochs}-epoch fine-tune"
+    if kind == "quant_prune":
+        assert quant_bits is not None
+        model = prune_hidden_channels(fp32_model, keep_ratio=keep_ratio)
         pruned_ckpt = copy.deepcopy(ckpt)
-        pruned_ckpt["config"] = dict(pruned_ckpt["config"], hidden=model.head[2].in_features)
+        pruned_ckpt["config"] = dict(pruned_ckpt["config"], hidden=model.head[-1].in_features)
         finetune_model(
             model,
             pruned_ckpt,
             data_root=args.data_root,
             split_file=args.split_file,
-            epochs=args.prune_finetune_epochs,
+            epochs=finetune_epochs,
             batch_size=args.batch_size,
             lr=args.finetune_lr,
             device_name=args.device,
@@ -268,12 +265,12 @@ def build_config_model(
         )
         pct = int(round(keep_ratio * 100))
         return (
-            quantize_dequantize_weights(model, bits=8),
+            quantize_dequantize_weights(model, bits=quant_bits),
             pruned_ckpt,
-            8,
-            f"Structured {pct}% prune with fine-tuning, then INT8 weight quantize-dequantize",
+            quant_bits,
+            f"Structured {pct}% prune + {finetune_epochs}-epoch fine-tune, then INT{quant_bits} QDQ",
         )
-    raise ValueError(f"Unknown config {name!r}. Expected one of: {', '.join(CONFIGS)}")
+    raise ValueError(f"Unhandled config kind {kind!r}")
 
 
 def compact_metrics(
@@ -285,8 +282,11 @@ def compact_metrics(
     file_size_kb: float,
     artifact: Path,
     method_note: str,
+    keep_ratio: float | None = None,
+    finetune_epochs: int | None = None,
+    quant_bits: int | None = None,
 ) -> dict[str, Any]:
-    return {
+    out = {
         "name": name,
         "accuracy": metrics["accuracy"],
         "macro_f1": metrics["macro_f1"],
@@ -301,33 +301,54 @@ def compact_metrics(
         "method_note": method_note,
         "report": metrics["report"],
     }
+    if keep_ratio is not None:
+        out["keep_ratio"] = keep_ratio
+    if finetune_epochs is not None:
+        out["finetune_epochs"] = finetune_epochs
+    if quant_bits is not None:
+        out["quant_bits"] = quant_bits
+    return out
+
+
+def load_model_checkpoint(checkpoint: Path, model_name: str) -> tuple[dict[str, Any], nn.Module]:
+    ckpt = load_checkpoint(checkpoint)
+    cfg = dict(ckpt["config"])
+    cfg["model_name"] = model_name
+    ckpt = {**ckpt, "config": cfg}
+    return ckpt, model_from_checkpoint(ckpt, checkpoint)
 
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--checkpoint", type=Path, default=TINYTCN_RUNS / "fp32_100hz" / "best_model.pt")
+    p.add_argument("--model", choices=SUPPORTED_MODELS, default="tcn")
+    p.add_argument("--checkpoint", type=Path, default=None)
     p.add_argument("--data-root", type=Path, default=DATA_XY)
     p.add_argument("--split-file", type=Path, default=SHARED_SPLITS / "subject_split.csv")
     p.add_argument("--out-dir", type=Path, default=COMPRESSION_RESULTS / "runs")
-    p.add_argument("--results", type=Path, default=COMPRESSION_RESULTS / "results" / "metrics.json")
-    p.add_argument("--overrides", type=Path, default=COMPRESSION_RESULTS / "overrides.json")
-    p.add_argument("--configs", nargs="+", default=list(CONFIGS))
+    p.add_argument("--results", type=Path, default=None)
+    p.add_argument("--overrides", type=Path, default=None)
+    p.add_argument("--configs", nargs="+", default=list(DEFAULT_CONFIGS))
     p.add_argument("--batch-size", type=int, default=512)
     p.add_argument("--device", type=str, default="auto")
     p.add_argument("--lazy", action="store_true")
     p.add_argument("--cache-trials", type=int, default=3)
     p.add_argument("--prune-finetune-epochs", type=int, default=5)
     p.add_argument("--finetune-lr", type=float, default=1e-4)
-    p.add_argument("--keep-ratio", type=float, default=0.5, help="Structured prune keep ratio (0.25/0.5/0.75)")
+    p.add_argument("--keep-ratio", type=float, default=0.5, help="Default keep ratio when config name omits it")
     args = p.parse_args()
 
-    ckpt = load_checkpoint(args.checkpoint)
-    fp32_model = model_from_checkpoint(ckpt, args.checkpoint)
+    checkpoint = args.checkpoint or default_checkpoint(args.model)
+    if args.results is None:
+        args.results = COMPRESSION_RESULTS / "results" / args.model / "metrics.json"
+    if args.overrides is None:
+        args.overrides = COMPRESSION_RESULTS / "results" / args.model / "overrides.json"
+
+    ckpt, fp32_model = load_model_checkpoint(checkpoint, args.model)
     all_results: dict[str, Any] = {}
     t0 = time.time()
 
     for name in args.configs:
-        print(f"\n=== {name} ===")
+        print(f"\n=== {args.model} / {name} ===")
         model, eval_ckpt, bits, method_note = build_config_model(name, fp32_model, ckpt, args)
         artifact = args.out_dir / name / "model.pt"
         hidden = int(eval_ckpt["config"].get("hidden", 32))
@@ -337,6 +358,7 @@ def main() -> None:
             artifact,
             config_name=name,
             method_note=method_note,
+            model_name=args.model,
             hidden=hidden,
         )
         params = count_parameters(model)
@@ -344,7 +366,7 @@ def main() -> None:
         metrics = evaluate_model_from_checkpoint_config(
             model,
             eval_ckpt,
-            checkpoint_path=args.checkpoint,
+            checkpoint_path=checkpoint,
             data_root=args.data_root,
             split_file=args.split_file,
             split="test",
@@ -355,6 +377,18 @@ def main() -> None:
             cache_trials=args.cache_trials,
             desc=f"test {name}",
         )
+        from kfold_configs import finetune_epochs_for_config, normalize_config_label
+
+        _, _, parsed_keep = parse_config_name(name, default_keep_ratio=args.keep_ratio)
+        keep_ratio = parsed_keep
+        finetune_epochs = finetune_epochs_for_config(name)
+        base_name, _ = normalize_config_label(name)
+        if base_name == "FP32":
+            quant_bits = 32
+        elif base_name.startswith("INT") or "+" in base_name:
+            quant_bits = bits
+        else:
+            quant_bits = None
         result = compact_metrics(
             name=name,
             metrics=metrics,
@@ -363,6 +397,9 @@ def main() -> None:
             file_size_kb=file_size_kb,
             artifact=artifact,
             method_note=method_note,
+            keep_ratio=keep_ratio,
+            finetune_epochs=finetune_epochs,
+            quant_bits=quant_bits,
         )
         all_results[name] = result
         run_dir = args.out_dir / name
@@ -372,7 +409,7 @@ def main() -> None:
         print(f"{name}: macro_f1={result['macro_f1']:.4f}, size={size_kb:.2f} KB")
 
     args.results.parent.mkdir(parents=True, exist_ok=True)
-    args.results.write_text(json.dumps({"generated_at_unix": time.time(), "results": all_results}, indent=2))
+    args.results.write_text(json.dumps({"generated_at_unix": time.time(), "model": args.model, "results": all_results}, indent=2))
     args.overrides.write_text(json.dumps(all_results, indent=2))
     print(f"\nWrote {args.results}")
     print(f"Wrote {args.overrides}")

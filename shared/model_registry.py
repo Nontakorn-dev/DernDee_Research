@@ -9,7 +9,7 @@ from typing import Any
 
 from paths import EXPERIMENTS
 
-SUPPORTED_MODELS = ("tinytcn", "cnn1d", "lstm_gru", "tcn", "transformer")
+SUPPORTED_MODELS = ("tcn", "cnn1d", "lstm_gru", "transformer", "cnn_lstm")
 
 
 def model_module_path(model_name: str) -> Path:

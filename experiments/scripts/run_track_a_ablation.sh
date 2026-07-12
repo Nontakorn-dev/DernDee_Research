@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 mkdir -p logs
 
-CHECKPOINT="${CHECKPOINT:-experiments/tinytcn/runs/fp32_100hz/best_model.pt}"
+CHECKPOINT="${CHECKPOINT:-experiments/tcn/runs/fp32_100hz/best_model.pt}"
 OUT_ROOT="${OUT_ROOT:-experiments/compression/runs/track_a_ablation}"
 PYTHON="${PYTHON:-.venv/bin/python}"
 EPOCHS=(5 15 50)

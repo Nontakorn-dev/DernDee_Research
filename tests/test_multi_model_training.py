@@ -104,34 +104,6 @@ def test_checkpoint_reload_with_model_name():
     assert out.shape == (1, 4)
 
 
-def test_legacy_tinytcn_checkpoint_fallback():
-    sys.path.insert(0, str(ROOT / "experiments" / "tinytcn"))
-    from model import build_model
-
-    model = build_model(n_channels=12, n_classes=4, hidden=32)
-    ckpt = {
-        "model_state_dict": model.state_dict(),
-        "config": {
-            "window": 50,
-            "channels": "bilateral",
-            "feature_columns": ["lt_acc_x"] * 12,
-            "label_column": "phase_lt",
-            "n_channels": 12,
-            "n_classes": 4,
-            "hidden": 32,
-            "source_hz": 200,
-            "target_hz": 100,
-            "decimate": 2,
-        },
-        "norm_stats": {"mean": [0.0] * 12, "std": [1.0] * 12},
-    }
-    restored = model_from_checkpoint(
-        ckpt,
-        Path("experiments/tinytcn/runs/fp32_100hz/best_model.pt"),
-    )
-    assert restored(torch.zeros(1, 50, 12)).shape == (1, 4)
-
-
 def test_config_json_is_valid():
     config_path = ROOT / "shared" / "configs" / "train_fair_comparison.json"
     payload = json.loads(config_path.read_text())

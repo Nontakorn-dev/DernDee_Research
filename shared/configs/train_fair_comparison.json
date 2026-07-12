@@ -29,6 +29,9 @@
     "n_classes": 4
   },
   "model_overrides": {
+    "cnn_lstm": {
+      "num_layers": 1
+    },
     "lstm_gru": {
       "num_layers": 1
     },

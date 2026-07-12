@@ -10,13 +10,14 @@ import torch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "shared"))
-sys.path.insert(0, str(ROOT / "experiments" / "tinytcn"))
+sys.path.insert(0, str(ROOT / "experiments" / "tcn"))
+
+from model import build_model
 
 from analysis.collect_pareto import parse_report_metrics
 from data.dataset import make_windows_from_trial
 from evaluate import classification_metrics
 from gait_labels import resolve_label_column
-from model import build_model
 
 
 def test_label_resolution_prefers_dual_phase_columns() -> None:
@@ -40,7 +41,7 @@ def test_windowing_uses_causal_window_end_label_and_skips_unknown() -> None:
     np.testing.assert_array_equal(batch.x[-1], x[3:6])
 
 
-def test_tinytcn_forward_contract() -> None:
+def test_tcn_forward_contract() -> None:
     model = build_model(n_channels=12, n_classes=4, hidden=32)
     xb = torch.zeros(2, 50, 12)
 

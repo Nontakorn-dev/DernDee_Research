@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 mkdir -p logs
 
-CHECKPOINT="${CHECKPOINT:-experiments/tinytcn/runs/fp32_100hz/best_model.pt}"
+CHECKPOINT="${CHECKPOINT:-experiments/tcn/runs/fp32_100hz/best_model.pt}"
 OUT_ROOT="${OUT_ROOT:-experiments/compression/runs/track_a_prune_grid}"
 PYTHON="${PYTHON:-.venv/bin/python}"
 KEEP_RATIOS=(0.25 0.50 0.75)

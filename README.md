@@ -1,52 +1,42 @@
-# TinyTCN Compression for Real-Time Gait Detection
+# TCN Compression for Real-Time Gait Detection
 
-Research repo for the paper **Impact of Deep Compression Techniques on Phase-Specific Accuracy in TinyTCN for Real-Time Gait Detection**.
+Research repo for the paper **Impact of Deep Compression Techniques on Phase-Specific Accuracy in TCN for Real-Time Gait Detection**.
 
-The project studies how TinyTCN compression affects each gait phase (LR, LS, PSw, Sw) when moving toward ESP32-C3 deployment. The current research contract is:
+The project studies how TCN compression affects each gait phase (LR, LS, PSw, Sw) when moving toward ESP32-C3 deployment. The current research contract is:
 
-- 12-channel bilateral shank IMU input
-- 100 Hz evaluation only
-- 0.5 s causal windows
-- subject-wise split: 24 train / 5 validation / 6 test
-- PyTorch-first compression evaluation for accuracy and phase degradation
-- ESP32-C3 on-device latency and SRAM measured for all four deployable TFLite configs
+- 100 Hz bilateral shank IMU (12 channels)
+- 0.5 s causal windows (50 samples)
+- Subject-wise stratified 5-fold CV × 3 seeds (primary)
+- FP32 baselines: TCN, CNN1D, LSTM+GRU, Transformer, CNN-LSTM (hidden width 32)
+- Compression: FP32, INT8, Prune50, INT8+Prune50
 
 ## Layout
 
 ```
-Research/
-├── paper/                  # LaTeX draft and generated figures
-├── dataset/Xy              # Symlink to preprocessed trial CSVs
-├── docs/                   # Reproducibility protocol
-├── shared/                 # Labels, data loading, splits, metrics
-├── analysis/               # Pareto and phase-degradation artifacts
-└── experiments/
-    ├── tinytcn/            # Implemented FP32 model, train, inference
-    ├── compression/        # PyTorch-first compression evaluation
-    ├── esp32/              # Hardware benchmark protocol
-    └── */                  # Baseline stubs / future work
+experiments/
+    ├── tcn/              # Primary deployment model
+    ├── cnn1d/            # Baseline
+    ├── cnn_lstm/         # Conv1d → LSTM hybrid baseline
+    ├── lstm_gru/         # Baseline
+    ├── transformer/      # Baseline
+    ├── compression/      # PyTorch compression eval
+    └── esp32/            # TFLite export + on-device benchmark
+shared/                   # Training protocol, splits, eval
+analysis/                 # Aggregation + paper figures
+paper/                    # LaTeX manuscript
 ```
 
-## Quickstart
-
-Run commands from this repository root:
+## Quick start
 
 ```bash
-pip install -r shared/requirements.txt
+# Sync k-fold manifest
+python experiments/scripts/run_kfold_orchestrator.py --sync-only
 
-bash experiments/scripts/train_all_colab.sh \
-  --config shared/configs/train_fair_comparison.json \
-  --data-root dataset/Xy \
-  --lazy \
-  --device cuda
+# TCN k-fold compression (120 jobs)
+bash experiments/scripts/run_kfold_compression.sh --model tcn --lazy --skip-clean
+
+# Aggregate results
+python analysis/aggregate_runs.py
 ```
 
-If `experiments/tinytcn/runs/fp32_100hz/best_model.pt` is missing, train FP32 models first (see `docs/COLAB_TRAINING.md`), then run compression and figure scripts.
-
-## Status
-
-- TinyTCN + baselines: shared training runner implemented; retrain all models with `experiments/scripts/train_all_colab.sh`.
-- Compression: runner for INT8, Prune50, INT8+Prune50; metrics in `experiments/compression/manifest.json`.
-- ESP32-C3: all four deployable TFLite configs measured (`experiments/esp32/benchmarks/esp32_c3_metrics.json`).
-
-See `docs/PROTOCOL.md`, `EVALUATION.md`, and `PAPER_TABLES.md`.
+See `docs/PROTOCOL.md` for the full workflow.

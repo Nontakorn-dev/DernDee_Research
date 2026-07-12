@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plot TinyTCN training convergence curves."""
+"""Plot TCN training convergence curves."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ RESEARCH_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RESEARCH_ROOT))
 
 from analysis.plot_style import apply_paper_style, save_figure, split_caption  # noqa: E402
-from shared.paths import PAPER_FIGURES, SHARED_SPLITS, TINYTCN_RUNS  # noqa: E402
+from shared.paths import PAPER_FIGURES, SHARED_SPLITS, TCN_RUNS  # noqa: E402
 
 
 def load_split_counts() -> dict[str, int]:
@@ -99,13 +99,13 @@ def plot_training(history_path: Path, *, out_pdf: Path, out_png: Path | None = N
             fontsize=8,
         )
 
-    fig.suptitle("TinyTCN FP32 training convergence", y=1.02, fontsize=12)
+    fig.suptitle("TCN FP32 training convergence", y=1.02, fontsize=12)
     save_figure(fig, out_pdf, out_png)
 
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--history", type=Path, default=TINYTCN_RUNS / "fp32_100hz" / "history.json")
+    p.add_argument("--history", type=Path, default=TCN_RUNS / "fp32_100hz" / "history.json")
     p.add_argument("--out-pdf", type=Path, default=PAPER_FIGURES / "training_convergence.pdf")
     p.add_argument("--out-png", type=Path, default=PAPER_FIGURES / "training_convergence.png")
     args = p.parse_args()

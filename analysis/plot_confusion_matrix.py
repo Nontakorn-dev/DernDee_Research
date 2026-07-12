@@ -25,7 +25,7 @@ from analysis.plot_style import (  # noqa: E402
     save_figure,
     split_caption,
 )
-from shared.paths import COMPRESSION_RESULTS, PAPER_FIGURES, SHARED_SPLITS, TINYTCN_RUNS  # noqa: E402
+from shared.paths import COMPRESSION_RESULTS, PAPER_FIGURES, SHARED_SPLITS, TCN_RUNS  # noqa: E402
 
 
 @dataclass(frozen=True)
@@ -191,7 +191,7 @@ def plot_confusion_matrix(
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--fp32-run-dir", type=Path, default=TINYTCN_RUNS / "fp32_100hz")
+    p.add_argument("--fp32-run-dir", type=Path, default=TCN_RUNS / "fp32_100hz")
     p.add_argument("--compression-runs-dir", type=Path, default=COMPRESSION_RESULTS / "runs")
     p.add_argument("--configs", nargs="*", default=None)
     p.add_argument("--skip-val", action="store_true")
@@ -209,7 +209,7 @@ def main() -> None:
     )
     if not sources:
         raise SystemExit(
-            "No confusion matrices found. Train TinyTCN first or run compression evaluation."
+            "No confusion matrices found. Train TCN first or run compression evaluation."
         )
     plot_confusion_matrix(sources, out_pdf=args.out_pdf, out_png=args.out_png)
     print(f"Saved {args.out_pdf}")

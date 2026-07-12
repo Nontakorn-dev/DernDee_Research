@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export TinyTCN compression configs to TFLite for ESP32-C3 deployment.
+"""Export TCN compression configs to TFLite for ESP32-C3 deployment.
 
 FP32 / Prune50: float32 TFLite from compression checkpoints.
 INT8 / INT8+Prune50: full-integer PTQ from FP32 / Prune50 float weights
@@ -20,17 +20,16 @@ import torch
 
 RESEARCH_ROOT = Path(__file__).resolve().parents[3]
 SHARED = RESEARCH_ROOT / "shared"
-TINYTCN_DIR = RESEARCH_ROOT / "experiments" / "tinytcn"
 ESP32_DIR = RESEARCH_ROOT / "experiments" / "esp32"
 COMPRESSION_RUNS = RESEARCH_ROOT / "experiments" / "compression" / "runs"
+DEFAULT_MODEL = "tcn"
 
 sys.path.insert(0, str(SHARED))
-sys.path.insert(0, str(TINYTCN_DIR))
+sys.path.insert(0, str(RESEARCH_ROOT))
 
 from data.dataset import NormStats, load_trial  # noqa: E402
 from data.splits import files_for_split, load_split  # noqa: E402
-from eval_checkpoint import load_checkpoint, norm_from_checkpoint  # noqa: E402
-from model import TinyTCN  # noqa: E402
+from eval_checkpoint import load_checkpoint, model_from_checkpoint, norm_from_checkpoint  # noqa: E402
 from gait_labels import IMU_INPUT_COLUMNS  # noqa: E402
 from paths import DATA_XY, SHARED_SPLITS  # noqa: E402
 
@@ -46,14 +45,8 @@ EXPORT_PLAN: dict[str, tuple[str, str]] = {
 
 
 def load_export_model(ckpt: dict[str, Any], checkpoint_path: Path) -> torch.nn.Module:
-    """Load TinyTCN respecting pruned `hidden` saved in compression checkpoints."""
-    cfg = ckpt["config"]
-    hidden = int(cfg.get("hidden", cfg.get("model_kwargs", {}).get("hidden", 32)))
-    n_channels = int(cfg.get("n_channels", len(cfg["feature_columns"])))
-    n_classes = int(cfg.get("n_classes", cfg.get("model_kwargs", {}).get("n_classes", 4)))
-    model = TinyTCN(n_channels=n_channels, n_classes=n_classes, hidden=hidden)
-    model.load_state_dict(ckpt["model_state_dict"])
-    return model
+    """Load deployment model respecting pruned `hidden` saved in compression checkpoints."""
+    return model_from_checkpoint(ckpt, checkpoint_path)
 
 
 def checkpoint_for_config(config: str) -> Path:

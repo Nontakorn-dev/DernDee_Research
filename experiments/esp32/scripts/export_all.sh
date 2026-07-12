@@ -24,4 +24,4 @@ echo "==> Generating Arduino headers"
 echo "==> Host validation"
 "${EXPORT_PY}" "${ROOT}/experiments/esp32/scripts/validate_tflite.py" --configs ${CONFIGS}
 
-echo "Done. Flash sketch from experiments/esp32/arduino/tinytcn_benchmark/"
+echo "Done. Flash sketch from experiments/esp32/arduino/tcn_benchmark/"

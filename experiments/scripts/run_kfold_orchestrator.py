@@ -13,6 +13,7 @@ RESEARCH_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(RESEARCH_ROOT))
 sys.path.insert(0, str(RESEARCH_ROOT / "shared"))
 
+from experiments.compression.kfold_configs import compression_eval_cli_args
 from experiments.kfold_manifest import (  # noqa: E402
     MANIFEST_PATH,
     baseline_run_dir,
@@ -24,11 +25,11 @@ from experiments.kfold_manifest import (  # noqa: E402
 )
 
 TRAIN_SCRIPT = {
-    "cnn1d": RESEARCH_ROOT / "experiments" / "cnn1d" / "train.py",
     "tcn": RESEARCH_ROOT / "experiments" / "tcn" / "train.py",
-    "tinytcn": RESEARCH_ROOT / "experiments" / "tinytcn" / "train.py",
+    "cnn1d": RESEARCH_ROOT / "experiments" / "cnn1d" / "train.py",
     "lstm_gru": RESEARCH_ROOT / "experiments" / "lstm_gru" / "train.py",
     "transformer": RESEARCH_ROOT / "experiments" / "transformer" / "train.py",
+    "cnn_lstm": RESEARCH_ROOT / "experiments" / "cnn_lstm" / "train.py",
 }
 
 
@@ -96,16 +97,19 @@ def run_compression(
     data_root: Path | None,
     device: str | None,
 ) -> int:
+    model = job["model"]
     fold = job["fold"]
     seed = job["seed"]
     config_name = job["config"]
-    checkpoint = baseline_run_dir("tinytcn", fold, seed) / "best_model.pt"
-    out_dir = compression_run_dir(fold, seed, config_name)
+    checkpoint = baseline_run_dir(model, fold, seed) / "best_model.pt"
+    out_dir = compression_run_dir(model, fold, seed, config_name)
     split_file = split_file_for_fold(fold)
 
     cmd = [
         sys.executable,
         str(RESEARCH_ROOT / "experiments" / "compression" / "run_eval.py"),
+        "--model",
+        model,
         "--checkpoint",
         str(checkpoint),
         "--split-file",
@@ -121,8 +125,9 @@ def run_compression(
         cmd.extend(["--device", device])
     if lazy:
         cmd.append("--lazy")
+    cmd.extend(compression_eval_cli_args(config_name))
 
-    print(f"Running compression: {config_name} fold={fold} seed={seed}")
+    print(f"Running compression: {model} / {config_name} fold={fold} seed={seed}")
     mark_job(MANIFEST_PATH, job, status="running")
     result = subprocess.run(cmd, cwd=RESEARCH_ROOT)
     if result.returncode != 0:

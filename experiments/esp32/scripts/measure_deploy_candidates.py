@@ -63,7 +63,7 @@ def main() -> None:
     print(f"Updated {args.metrics}")
     if pending:
         print(f"Pending hardware measurement: {', '.join(pending)}")
-        print("Flash via Arduino IDE: experiments/esp32/arduino/tinytcn_benchmark/")
+        print("Flash via Arduino IDE: experiments/esp32/arduino/tcn_benchmark/")
     else:
         print("All deploy candidates have latency measurements.")
 

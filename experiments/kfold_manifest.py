@@ -11,8 +11,12 @@ from typing import Literal
 RESEARCH_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = RESEARCH_ROOT / "experiments" / "kfold_run_manifest.json"
 
-BASELINE_MODELS = ("cnn1d", "tcn", "tinytcn", "lstm_gru", "transformer")
-COMPRESSION_CONFIGS = ("FP32", "INT8", "Prune50", "INT8+Prune50")
+BASELINE_MODELS = ("tcn", "cnn1d", "lstm_gru", "transformer", "cnn_lstm")
+COMPRESSION_MODELS = ("tcn",)
+from experiments.compression.kfold_configs import (  # noqa: E402
+    COMPRESSION_CONFIGS,
+    PRIMARY_COMPRESSION_CONFIGS,
+)
 DEFAULT_SEEDS = (42, 123, 456)
 DEFAULT_FOLDS = tuple(range(5))
 
@@ -37,8 +41,8 @@ def baseline_run_dir(model: str, fold: int, seed: int) -> Path:
     return RESEARCH_ROOT / "experiments" / model / "runs" / f"fold{fold}_seed{seed}_fp32_100hz"
 
 
-def compression_run_dir(fold: int, seed: int, config: str) -> Path:
-    return RESEARCH_ROOT / "experiments" / "compression" / "runs" / f"fold{fold}_seed{seed}" / config
+def compression_run_dir(model: str, fold: int, seed: int, config: str) -> Path:
+    return RESEARCH_ROOT / "experiments" / "compression" / "runs" / model / f"fold{fold}_seed{seed}" / config
 
 
 def split_file_for_fold(fold: int) -> Path:
@@ -58,7 +62,7 @@ def infer_job_status(job: KFoldJob) -> JobStatus:
         run_dir = baseline_run_dir(job.model, job.fold, job.seed)
     else:
         assert job.config is not None
-        run_dir = compression_run_dir(job.fold, job.seed, job.config)
+        run_dir = compression_run_dir(job.model, job.fold, job.seed, job.config)
 
     job.run_dir = str(run_dir)
     if job.phase == "baseline" and baseline_done(run_dir):
@@ -71,6 +75,7 @@ def infer_job_status(job: KFoldJob) -> JobStatus:
 def generate_jobs(
     *,
     models: tuple[str, ...] = BASELINE_MODELS,
+    compression_models: tuple[str, ...] = COMPRESSION_MODELS,
     folds: tuple[int, ...] = DEFAULT_FOLDS,
     seeds: tuple[int, ...] = DEFAULT_SEEDS,
     include_compression: bool = True,
@@ -82,18 +87,19 @@ def generate_jobs(
                 jobs.append(KFoldJob(model=model, fold=fold, seed=seed, phase="baseline"))
 
     if include_compression:
-        for fold in folds:
-            for seed in seeds:
-                for config in COMPRESSION_CONFIGS:
-                    jobs.append(
-                        KFoldJob(
-                            model="tinytcn",
-                            fold=fold,
-                            seed=seed,
-                            phase="compression",
-                            config=config,
+        for model in compression_models:
+            for fold in folds:
+                for seed in seeds:
+                    for config in COMPRESSION_CONFIGS:
+                        jobs.append(
+                            KFoldJob(
+                                model=model,
+                                fold=fold,
+                                seed=seed,
+                                phase="compression",
+                                config=config,
+                            )
                         )
-                    )
     return jobs
 
 
@@ -112,13 +118,20 @@ def sync_manifest(
     path: Path = MANIFEST_PATH,
     *,
     models: tuple[str, ...] = BASELINE_MODELS,
+    compression_models: tuple[str, ...] = COMPRESSION_MODELS,
     folds: tuple[int, ...] = DEFAULT_FOLDS,
     seeds: tuple[int, ...] = DEFAULT_SEEDS,
     include_compression: bool = True,
     reset_running: bool = False,
 ) -> dict:
     existing = {job_key(j): j for j in load_manifest(path).get("jobs", [])}
-    jobs = generate_jobs(models=models, folds=folds, seeds=seeds, include_compression=include_compression)
+    jobs = generate_jobs(
+        models=models,
+        compression_models=compression_models,
+        folds=folds,
+        seeds=seeds,
+        include_compression=include_compression,
+    )
 
     synced: list[dict] = []
     for job in jobs:
@@ -151,7 +164,7 @@ def sync_manifest(
 
 def job_key(job: dict) -> str:
     if job.get("phase") == "compression":
-        return f"compression:fold{job['fold']}:seed{job['seed']}:{job['config']}"
+        return f"compression:{job['model']}:fold{job['fold']}:seed{job['seed']}:{job['config']}"
     return f"baseline:{job['model']}:fold{job['fold']}:seed{job['seed']}"
 
 
@@ -161,21 +174,41 @@ def next_pending_job(
     model: str | None = None,
     phase: JobPhase | None = None,
 ) -> dict | None:
-    """Model-first order: model → fold → seed; compression after baseline per fold×seed."""
+    """Model-first order; compression waits for that model's baseline checkpoint."""
     jobs = payload.get("jobs", [])
     for job in jobs:
         if job.get("status") != "pending":
             continue
-        if model and job.get("model") != model and job.get("phase") == "baseline":
-            continue
         if phase and job.get("phase") != phase:
             continue
+        if model and job.get("model") != model:
+            continue
         if job.get("phase") == "compression":
-            baseline = baseline_run_dir("tinytcn", job["fold"], job["seed"])
+            baseline = baseline_run_dir(job["model"], job["fold"], job["seed"])
             if not baseline_done(baseline):
                 continue
         return job
     return None
+
+
+def reset_compression_jobs(
+    path: Path = MANIFEST_PATH,
+    *,
+    models: tuple[str, ...] | None = None,
+) -> dict:
+    """Mark compression jobs pending (optionally scoped to selected models)."""
+    payload = load_manifest(path)
+    for job in payload.get("jobs", []):
+        if job.get("phase") != "compression":
+            continue
+        if models is not None and job.get("model") not in models:
+            continue
+        job["status"] = "pending"
+        job["finished_at"] = None
+        job["error"] = None
+    payload["updated_at"] = datetime.now(timezone.utc).isoformat()
+    save_manifest(payload, path)
+    return payload
 
 
 def mark_job(path: Path, job: dict, *, status: JobStatus, error: str | None = None) -> None:

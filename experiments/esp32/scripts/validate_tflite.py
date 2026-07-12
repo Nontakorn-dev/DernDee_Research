@@ -14,19 +14,18 @@ import torch
 RESEARCH_ROOT = Path(__file__).resolve().parents[3]
 SCRIPTS_DIR = Path(__file__).resolve().parent
 SHARED = RESEARCH_ROOT / "shared"
-TINYTCN_DIR = RESEARCH_ROOT / "experiments" / "tinytcn"
 ESP32_DIR = RESEARCH_ROOT / "experiments" / "esp32"
 COMPRESSION_RUNS = RESEARCH_ROOT / "experiments" / "compression" / "runs"
 
 sys.path.insert(0, str(SCRIPTS_DIR))
 sys.path.insert(0, str(SHARED))
-sys.path.insert(0, str(TINYTCN_DIR))
+sys.path.insert(0, str(RESEARCH_ROOT))
 
 from eval_checkpoint import load_checkpoint  # noqa: E402
 from export_headers import deterministic_replay_window  # noqa: E402
 from export_tflite import EXPORT_PLAN, EXPORT_CONFIGS, load_export_model, window_ntc_to_nchw  # noqa: E402
 from gait_labels import PHASE_NAMES  # noqa: E402
-from paths import DATA_XY, SHARED_SPLITS, TINYTCN_RUNS  # noqa: E402
+from paths import DATA_XY, SHARED_SPLITS, TCN_RUNS  # noqa: E402
 
 
 def run_tflite(tflite_path: Path, normalized_window: np.ndarray) -> np.ndarray:
@@ -117,7 +116,7 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--configs", nargs="+", default=list(EXPORT_CONFIGS), choices=EXPORT_CONFIGS)
     p.add_argument("--exports-dir", type=Path, default=ESP32_DIR / "exports")
-    p.add_argument("--checkpoint", type=Path, default=TINYTCN_RUNS / "fp32_100hz" / "best_model.pt")
+    p.add_argument("--checkpoint", type=Path, default=TCN_RUNS / "fp32_100hz" / "best_model.pt")
     p.add_argument("--data-root", type=Path, default=DATA_XY)
     p.add_argument("--split-file", type=Path, default=SHARED_SPLITS / "subject_split.csv")
     p.add_argument("--window-index", type=int, default=0)

@@ -12,17 +12,17 @@ import numpy as np
 
 RESEARCH_ROOT = Path(__file__).resolve().parents[3]
 SHARED = RESEARCH_ROOT / "shared"
-TINYTCN_DIR = RESEARCH_ROOT / "experiments" / "tinytcn"
+TCN_DIR = RESEARCH_ROOT / "experiments" / "tcn"
 ESP32_DIR = RESEARCH_ROOT / "experiments" / "esp32"
 
 sys.path.insert(0, str(SHARED))
-sys.path.insert(0, str(TINYTCN_DIR))
+sys.path.insert(0, str(RESEARCH_ROOT))
 
 from data.dataset import NormStats, load_trial  # noqa: E402
 from data.splits import files_for_split, load_split  # noqa: E402
 from eval_checkpoint import load_checkpoint, norm_from_checkpoint  # noqa: E402
 from gait_labels import IMU_INPUT_COLUMNS, PHASE_NAMES  # noqa: E402
-from paths import DATA_XY, SHARED_SPLITS, TINYTCN_RUNS  # noqa: E402
+from paths import DATA_XY, SHARED_SPLITS, TCN_RUNS  # noqa: E402
 
 EXPORT_CONFIGS = ("FP32", "INT8", "Prune50", "INT8+Prune50")
 
@@ -176,10 +176,10 @@ def main() -> None:
     p.add_argument(
         "--arduino-dir",
         type=Path,
-        default=ESP32_DIR / "arduino" / "tinytcn_benchmark" / "tinytcn_benchmark",
+        default=ESP32_DIR / "arduino" / "tcn_benchmark" / "tcn_benchmark",
     )
-    p.add_argument("--norm-stats", type=Path, default=TINYTCN_RUNS / "fp32_100hz" / "norm_stats.json")
-    p.add_argument("--checkpoint", type=Path, default=TINYTCN_RUNS / "fp32_100hz" / "best_model.pt")
+    p.add_argument("--norm-stats", type=Path, default=TCN_RUNS / "fp32_100hz" / "norm_stats.json")
+    p.add_argument("--checkpoint", type=Path, default=TCN_RUNS / "fp32_100hz" / "best_model.pt")
     p.add_argument("--data-root", type=Path, default=DATA_XY)
     p.add_argument("--split-file", type=Path, default=SHARED_SPLITS / "subject_split.csv")
     p.add_argument("--window-index", type=int, default=0, help="Deterministic test-window index.")
