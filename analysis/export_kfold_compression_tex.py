@@ -50,7 +50,7 @@ def fmt_mean_std(entry: dict | None, *, n_complete: int) -> str:
         return f"--- ({n_complete}/{EXPECTED_RUNS})"
     if std is None or math.isnan(std):
         return f"{mean * 100:.2f}"
-    return f"{mean * 100:.2f}\\,$\\pm\\,{std * 100:.2f}"
+    return f"{mean * 100:.2f}\\,$\\pm$\\,{std * 100:.2f}"
 
 
 def fmt_wilcoxon(entry: dict | None, *, n_complete: int) -> str:
@@ -124,7 +124,10 @@ def write_kfold_compression_table(
     if total_jobs >= TOTAL_JOBS:
         lines.append(
             f"  {{\\scriptsize Paired Wilcoxon signed-rank tests on matched fold$\\times$seed pairs "
-            f"($N{{=}}15$) vs.\\ FP32. All configs complete ({total_jobs}/{TOTAL_JOBS} jobs).}}"
+            f"($N{{=}}15$) vs.\\ FP32. All configs complete ({total_jobs}/{TOTAL_JOBS} jobs). "
+            f"$p{{=}}6.10\\mathrm{{e}}{{-05}}$ is the $N{{=}}15$ Wilcoxon floor (see Limitations). "
+            f"Config names denote \\% channels retained; Prune25 is most aggressive, Prune75 "
+            f"mildest.}}"
         )
     else:
         lines.append(

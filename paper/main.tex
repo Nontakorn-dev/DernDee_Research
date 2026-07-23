@@ -312,7 +312,9 @@ post-training quantization.
 convolutional blocks; the top-$k$ channels are retained and removed elsewhere in the stem and
 classification head. The pruned model is fine-tuned on \emph{training subjects only} (Adam,
 learning rate $10^{-4}$, class-balanced loss) before re-evaluation. Primary k-fold configs sweep
-25\%, 50\%, and 75\% channel retention (Prune25/50/75) with a default 5-epoch fine-tune budget;
+25\%, 50\%, and 75\% channel retention (Prune25/50/75; Prune25 \emph{retains} 25\% and is thus
+the most aggressive setting, Prune75 the mildest) with a
+default 5-epoch fine-tune budget;
 Table~\ref{tab:finetune-ablation} reports the same protocol at $N{=}15$.
 
 \textbf{Extended compression grid (k-fold).} Beyond FP32/INT8 and Prune25/50/75, combined
@@ -406,21 +408,23 @@ are at most 0.03~pp (PSw: $82.75\%$ vs.\ $82.72\%$), confirming that 8-bit weigh
 sufficient for this TCN under the PyTorch QDQ proxy.
 
 \textbf{Pruning severity trades size for accuracy in a monotonic pattern.}
-Prune25 (${\sim}4.3$~KB) reduces macro F1 by 3.25~pp ($87.62\%\pm1.45\%$, $p{<}0.001$), with the
-largest phase-specific loss in LR ($-$6.98~pp) and PSw ($-$3.75~pp).
-Prune50 (${\sim}13.1$~KB) costs 1.47~pp ($89.40\%\pm1.43\%$, $p{<}0.001$).
-Prune75 (${\sim}26.4$~KB) costs 0.70~pp ($90.17\%\pm1.30\%$, $p{<}0.001$).
+Prune25 (${\sim}4.3$~KB estimated payload) reduces macro F1 by 3.25~pp ($87.62\%\pm1.45\%$,
+$p{<}0.001$), with the largest phase-specific loss in LR ($-$6.98~pp) and PSw ($-$3.75~pp).
+Prune50 (${\sim}13.1$~KB estimated payload) costs 1.47~pp ($89.40\%\pm1.43\%$, $p{<}0.001$).
+Prune75 (${\sim}26.4$~KB estimated payload) costs 0.70~pp ($90.17\%\pm1.30\%$, $p{<}0.001$).
 All pruned configs remain significantly below FP32 at $\alpha{=}0.05$, but the effect size shrinks
 as more channels are retained.
 
 \textbf{Combined INT8+Prune50 minimizes size at a measurable accuracy cost.}
-INT8+Prune50 (${\sim}5.3$~KB, smallest ESP32-deployable point) achieves
-$89.33\%\pm1.36\%$ macro F1 ($-$1.54~pp, $p{=}1.2{\times}10^{-4}$), with PSw F1 falling to
-$80.93\%\pm2.00\%$ ($-$1.79~pp).
+INT8+Prune50 achieves $89.33\%\pm1.36\%$ macro F1 ($-$1.54~pp, $p{=}1.2{\times}10^{-4}$), with PSw
+F1 falling to $80.93\%\pm2.00\%$ ($-$1.79~pp). Its estimated payload is ${\sim}5.3$~KB
+(measured TFLite: 13.4~KB, Table~\ref{tab:esp32}; the ${\sim}8$~KB gap is fixed TFLite
+graph overhead common to every config)---still the smallest of the four deployed configs.
 
-Fig.~\ref{fig:pareto} and the preceding table summarize the extended grid; among non-dominated
-configurations, INT8 offers the best accuracy--size trade-off, while INT8+Prune50 targets minimum
-memory when a ${\sim}1.5$~pp macro F1 reduction is acceptable.
+Fig.~\ref{fig:pareto} (estimated payload; see Table~\ref{tab:esp32} for measured TFLite sizes)
+and the preceding table summarize the extended grid. Among non-dominated configurations, INT8
+offers the best accuracy--size trade-off, while INT8+Prune50 targets minimum memory when a
+${\sim}1.5$~pp macro F1 reduction is acceptable.
 
 \subsection{Fine-Tuning Schedule Ablation}
 
@@ -448,11 +452,13 @@ smallest footprint at the largest accuracy cost.
 \begin{figure}[!t]
   \centering
   \includegraphics[width=\linewidth]{figures/pareto_front.pdf}
-  \caption{Illustrative Pareto front (fold~0, seed~42; six compression configs).
+  \caption{Illustrative Pareto front (fold~0, seed~42; six compression configs). Horizontal axis
+  is \emph{estimated} payload size, not the measured TFLite footprint (Table~\ref{tab:esp32}).
   K-fold aggregates with Wilcoxon tests appear in Table~\ref{tab:kfold-compression}.
   Frontier: Prune25 $\rightarrow$ INT8+Prune50 $\rightarrow$ INT8;
   Prune50/Prune75/FP32 are dominated at this checkpoint. INT8 and Prune50 share ${\sim}13$~KB
-  but differ by 0.55~pp macro F1 (labels dodged for visibility).}
+  estimated payload but differ by 0.55~pp macro F1 (labels dodged for visibility). Prune25
+  \emph{retains} only 25\% of channels (most aggressive); Prune75 is mildest.}
   \label{fig:pareto}
 \end{figure}
 
@@ -474,12 +480,12 @@ Table~\ref{tab:esp32} reports on-device latency for four TFLite exports derived 
 seed~42 compression checkpoints. Benchmarks replay one fixed normalized $(50,12)$ window in a tight
 loop ($N{=}1000$ trials after 20 warmup invocations) without live IMU or BLE I/O.
 
-INT8+Prune50 is the only configuration that meets a strict real-time budget for per-window inference
-($75.7$~ms mean vs.\ a 500~ms window). Full-width INT8 and float Prune50 remain within the window
-($\approx$280 and 253~ms) but offer no latency advantage over INT8+Prune50 despite similar or larger
-TFLite sizes. FP32 exceeds the window ($856$~ms) and requires a 160~KB tensor arena, reducing minimum
-free heap to 116~KB vs.\ 156~KB for the 120~KB-arena configs. Reported heap reflects remaining dynamic
-SRAM after reserving a fixed arena; model weights are stored in flash.
+Three of the four configurations meet the 500~ms per-window budget: INT8+Prune50 ($75.7$~ms,
+${\sim}425$~ms headroom), Prune50 ($253$~ms), and full-width INT8 ($279.8$~ms); only FP32 exceeds
+it ($856$~ms). INT8+Prune50 is fastest by a wide margin (3.7$\times$ faster than full-width INT8)
+despite similar or larger TFLite sizes for the other two. FP32 additionally requires a 160~KB
+tensor arena, reducing minimum free heap to 116~KB vs.\ 156~KB for the 120~KB-arena configs
+(remaining dynamic SRAM after reserving the arena; weights are stored in flash).
 
 \input{tables/esp32_placeholder}
 
@@ -518,10 +524,12 @@ affected.
 \subsection{Efficiency-Accuracy Trade-off}
 
 The k-fold Pareto analysis (Table~\ref{tab:kfold-compression} and Fig.~\ref{fig:pareto})
-identifies INT8 (${\sim}13.0$~KB, $+0.01$~pp macro F1, $p{=}0.30$) as the preferred
-near-lossless compression point for ESP32-C3 deployment. INT8+Prune50 (${\sim}5.3$~KB) trades
+identifies INT8 (${\sim}13.0$~KB estimated payload, $+0.01$~pp macro F1, $p{=}0.30$) as the
+preferred near-lossless compression point for ESP32-C3 deployment. INT8+Prune50
+(${\sim}5.3$~KB estimated payload; 13.4~KB measured TFLite, Table~\ref{tab:esp32}) trades
 1.54~pp macro F1 ($p{=}1.2{\times}10^{-4}$) for minimum memory. Prune75 offers a middle ground
-(${\sim}26.4$~KB, $-$0.70~pp) when pruning without quantization is desired. Deployment latency
+(${\sim}26.4$~KB estimated payload, $-$0.70~pp) when pruning without quantization is desired.
+Deployment latency
 must be paired with these accuracy/size \emph{and} latency trade-offs. Table~\ref{tab:esp32} shows
 that INT8+Prune50 is the Pareto-optimal deployable point on ESP32-C3 (13.4~KB TFLite, 75.7~ms
 latency, 156~KB minimum free heap). Full-width INT8 preserves accuracy but runs 3.7$\times$
@@ -539,7 +547,11 @@ stride-1 sliding-window inference at 100~Hz was not evaluated.
         end-to-end latency with live IMU/BLE streaming remains unmeasured.
   \item Test stride~1 yields highly overlapping windows; per-subject blocked aggregation mitigates
         inflated effective sample size, but Wilcoxon tests operate on fold$\times$seed aggregates
-        ($N{=}15$) rather than subject-blocked scores.
+        ($N{=}15$) rather than subject-blocked scores. These pairs are also not fully independent
+        (three seeds share the same five fold splits), and $N{=}15$ bounds the smallest attainable
+        signed-rank $p$ at $6.10\times10^{-5}$, attained simultaneously by several configs of
+        differing effect size. Holm--Bonferroni correction within each table does not change any
+        significance conclusion reported here.
   \item PyTorch INT8 evaluation uses a quantize-dequantize weight proxy; deployed INT8 TFLite models
         use full-integer PTQ and may differ slightly in logits while preserving argmax in smoke
         tests.
@@ -561,9 +573,9 @@ epochs: $-$1.47~pp, $p{<}0.001$; Prune75: $-$0.70~pp, $p{<}0.001$). Fine-tune sc
 revealed that 0.94~pp of the Prune50 deficit is recoverable with longer training (50 epochs:
 $90.34\%\pm1.11\%$, $p{=}0.015$ vs.\ FP32), implicating insufficient recovery budget---not pruning
 alone---as a contributor to early results; a residual 0.53~pp gap nonetheless persists. PSw F1 was
-the most compression-sensitive transition phase. INT8+Prune50 (${\sim}5.3$~KB) offers minimum
-memory at a 1.54~pp cost ($p{=}1.2{\times}10^{-4}$), with on-device ESP32-C3 latency of 75.7~ms
-per 0.5~s window. Future work will validate live IMU streaming, measure power, and extend
+the most compression-sensitive transition phase. INT8+Prune50 (13.4~KB measured TFLite footprint)
+offers minimum memory at a 1.54~pp cost ($p{=}1.2{\times}10^{-4}$), with on-device ESP32-C3
+latency of 75.7~ms per 0.5~s window. Future work will validate live IMU streaming, measure power, and extend
 evaluation to additional cohorts.
 
 % Acknowledgment omitted for double-anonymous review.

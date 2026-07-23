@@ -112,7 +112,7 @@ def plot_pareto(
     x_vals = [display_x(pt) for pt in measured]
     x_max = max(pt["size_kb"] for pt in measured)
     ax.set_xlim(-1.0, x_max * 1.08)
-    ax.set_xlabel("Model size (KB)")
+    ax.set_xlabel("Estimated model size (KB)")
     ax.set_ylabel("Macro F1-score")
 
     ax.legend(
