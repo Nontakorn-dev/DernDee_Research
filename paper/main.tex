@@ -480,12 +480,14 @@ Table~\ref{tab:esp32} reports on-device latency for four TFLite exports derived 
 seed~42 compression checkpoints. Benchmarks replay one fixed normalized $(50,12)$ window in a tight
 loop ($N{=}1000$ trials after 20 warmup invocations) without live IMU or BLE I/O.
 
-Three of the four configurations meet the 500~ms per-window budget: INT8+Prune50 ($75.7$~ms,
-${\sim}425$~ms headroom), Prune50 ($253$~ms), and full-width INT8 ($279.8$~ms); only FP32 exceeds
-it ($856$~ms). INT8+Prune50 is fastest by a wide margin (3.7$\times$ faster than full-width INT8)
+The 500~ms budget assumes one inference per non-overlapping window (hop\,=\,window), \emph{not}
+the stride-1 (10~ms hop) offline evaluation protocol (Section~\ref{sec:method}); a stride-1
+deployment would need sub-10~ms inference, which no config achieves. Three of the four
+configurations meet this budget: INT8+Prune50 ($75.7$~ms, ${\sim}425$~ms headroom), Prune50
+($253$~ms), and full-width INT8 ($279.8$~ms); only FP32 exceeds it ($856$~ms). INT8+Prune50 is
+fastest by a wide margin (3.7$\times$ faster than full-width INT8)
 despite similar or larger TFLite sizes for the other two. FP32 additionally requires a 160~KB
-tensor arena, reducing minimum free heap to 116~KB vs.\ 156~KB for the 120~KB-arena configs
-(remaining dynamic SRAM after reserving the arena; weights are stored in flash).
+tensor arena, reducing minimum free heap to 116~KB vs.\ 156~KB for the 120~KB-arena configs.
 
 \input{tables/esp32_placeholder}
 
@@ -507,10 +509,13 @@ Across k-fold compression (Table~\ref{tab:kfold-compression}), PSw F1 shows the 
 pruning-related degradation relative to FP32: $-$3.75~pp (Prune25), $-$1.59~pp (Prune50, 5~ep),
 and $-$1.79~pp (INT8+Prune50), whereas INT8 quantization changes PSw F1 by only $+0.03$~pp
 ($p{=}0.30$ vs.\ FP32). LR F1 is equally sensitive under aggressive pruning ($-$6.98~pp for
-Prune25). The fine-tune ablation (Table~\ref{tab:finetune-ablation}) shows that extended recovery
-training partially restores PSw F1 ($81.13\%\to82.23\%$ from 5 to 50 epochs) but does not fully
-close the gap to FP32 ($82.72\%$). PSw is a short transition window whose decision boundary likely
-depends on finer temporal detail removed when hidden channels are pruned.
+Prune25); the fine-tune ablation (Table~\ref{tab:finetune-ablation}) confirms only partial PSw
+recovery. PSw's decision boundary likely depends on finer temporal detail removed when hidden
+channels are pruned. This may be confounded with support/difficulty, since LR/PSw are
+simultaneously the only transition phases and lowest-support classes ($\sim$6\%/5\%); still,
+relative to each phase's own FP32 F1 under Prune25, LR/PSw lose more ($-$8.1\%, $-$4.5\%) than
+steady-state LS/Sw ($-$1.3\%, $-$1.1\%)---not purely a baseline-F1 artifact, though collinear with
+only four phase classes.
 
 \subsection{Role of Dilated Convolutions Under Compression}
 
@@ -532,10 +537,9 @@ preferred near-lossless compression point for ESP32-C3 deployment. INT8+Prune50
 Deployment latency
 must be paired with these accuracy/size \emph{and} latency trade-offs. Table~\ref{tab:esp32} shows
 that INT8+Prune50 is the Pareto-optimal deployable point on ESP32-C3 (13.4~KB TFLite, 75.7~ms
-latency, 156~KB minimum free heap). Full-width INT8 preserves accuracy but runs 3.7$\times$
-slower on-device; FP32 is not real-time under this export pipeline. INT8+Prune50 leaves
-${\sim}425$~ms headroom within each 0.5~s window for BLE assembly and lightweight post-processing;
-stride-1 sliding-window inference at 100~Hz was not evaluated.
+latency, 156~KB minimum free heap), leaving ${\sim}425$~ms headroom for BLE assembly and
+post-processing. Full-width INT8 preserves accuracy but runs 3.7$\times$ slower; FP32 is not
+real-time under this export pipeline.
 
 \subsection{Limitations}
 
@@ -543,21 +547,18 @@ stride-1 sliding-window inference at 100~Hz was not evaluated.
   \item Results are derived from a single public dataset (NONAN GaitPrint); generalization to other
         populations, walking speeds, or pathological gait patterns requires further validation.
   \item ESP32-C3 benchmarks used a synthetic replay window (fold~0, seed~42); multi-checkpoint
-        on-device validation across all 15 fold$\times$seed pairs was not performed, and
-        end-to-end latency with live IMU/BLE streaming remains unmeasured.
+        on-device validation and end-to-end latency with live IMU/BLE streaming remain unmeasured.
   \item Test stride~1 yields highly overlapping windows; per-subject blocked aggregation mitigates
-        inflated effective sample size, but Wilcoxon tests operate on fold$\times$seed aggregates
-        ($N{=}15$) rather than subject-blocked scores. These pairs are also not fully independent
-        (three seeds share the same five fold splits), and $N{=}15$ bounds the smallest attainable
-        signed-rank $p$ at $6.10\times10^{-5}$, attained simultaneously by several configs of
-        differing effect size. Holm--Bonferroni correction within each table does not change any
-        significance conclusion reported here.
-  \item PyTorch INT8 evaluation uses a quantize-dequantize weight proxy; deployed INT8 TFLite models
-        use full-integer PTQ and may differ slightly in logits while preserving argmax in smoke
-        tests.
+        inflated effective sample size, but Wilcoxon tests use fold$\times$seed aggregates
+        ($N{=}15$), which are not fully independent (three seeds share the same five folds) and
+        bound the smallest attainable signed-rank $p$ at $6.10\times10^{-5}$ (attained by several
+        configs of differing effect size). Holm--Bonferroni correction within each table changes no
+        reported conclusion.
+  \item PyTorch INT8 evaluation uses a quantize-dequantize weight proxy; deployed TFLite models use
+        full-integer PTQ and may differ slightly in logits, though argmax matched in smoke tests.
   \item Power consumption (mW) was not measured on ESP32-C3.
   \item On-device latency used TFLite Micro reference kernels (Chirale\_TensorFlowLite); optimized
-        INT8 kernels could reduce inference time further.
+        kernels could reduce it further.
 \end{itemize}
 
 \section{Conclusion}
