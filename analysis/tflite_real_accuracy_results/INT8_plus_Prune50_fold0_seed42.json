@@ -1,0 +1,15 @@
+{
+  "config": "INT8+Prune50",
+  "fold": 0,
+  "seed": 42,
+  "tflite_kb": 13.4,
+  "elapsed_s": null,
+  "accuracy": null,
+  "macro_f1": 0.83,
+  "phase_f1": {
+    "LR": 0.7362,
+    "LS": 0.9333,
+    "PSw": 0.7141,
+    "Sw": 0.9363
+  }
+}

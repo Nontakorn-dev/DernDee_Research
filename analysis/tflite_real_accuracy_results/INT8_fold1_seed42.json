@@ -1,0 +1,15 @@
+{
+  "config": "INT8",
+  "fold": 1,
+  "seed": 42,
+  "tflite_kb": null,
+  "elapsed_s": null,
+  "accuracy": null,
+  "macro_f1": 0.8394,
+  "phase_f1": {
+    "LR": 0.7454,
+    "LS": 0.9484,
+    "PSw": 0.7281,
+    "Sw": 0.9358
+  }
+}

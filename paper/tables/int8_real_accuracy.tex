@@ -1,23 +1,24 @@
-% Hand-authored from experiments/esp32/benchmarks/tflite_int8_accuracy_kfold_seed42.json
+% Hand-authored from analysis/tflite_real_accuracy_summary.json (N=15: 5 folds x 3 seeds)
 \begin{table}[!t]
   \centering
-  \caption{Real Deployed TFLite INT8 vs.\ PyTorch (Macro F1 \%, TCN, Seed 42)}
+  \caption{Real Deployed TFLite vs.\ PyTorch Accuracy (Macro F1 \%, TCN, $N{=}15$)}
   \label{tab:int8-real}
   \scriptsize
-  \setlength{\tabcolsep}{4pt}
+  \setlength{\tabcolsep}{3.5pt}
   \renewcommand{\arraystretch}{1.08}
-  \begin{tabular}{@{} l c c c c c @{}}
+  \begin{tabular}{@{} l c c c c @{}}
     \toprule
-    \textbf{Fold} & \textbf{0} & \textbf{1} & \textbf{2} & \textbf{3} & \textbf{4} \\
+    \textbf{Config} & \textbf{Real TFLite} & \textbf{$\Delta$ vs.\ FP32} & \textbf{$\Delta$ vs.\ proxy} & \textbf{Wilcoxon $p$} \\
     \midrule
-    FP32 & 91.07 & 87.72 & 90.91 & 91.83 & 91.34 \\
-    INT8 QDQ proxy & 91.10 & 87.69 & 90.94 & 91.82 & 91.30 \\
-    INT8 real TFLite & 87.48 & 83.94 & 84.12 & 84.61 & 70.44 \\
-    Gap (pp) & $-$3.59 & $-$3.77 & $-$6.78 & $-$7.22 & $-$20.90 \\
+    INT8 & 79.72\,$\pm$\,9.08 & $-$11.15\,$\pm$\,9.51 & $-$11.16 & 6.10e-05 \\
+    INT8+Prune50 & 77.78\,$\pm$\,6.73 & $-$13.10\,$\pm$\,6.59 & $-$11.56 & 6.10e-05 \\
     \bottomrule
   \end{tabular}
 
   \vspace{0.3em}
   {\scriptsize Real TFLite: full test set (stride-1) via interpreter on the exact exported
-  artifact. Gap $=$ real TFLite $-$ FP32; mean $-8.46\pm7.15$~pp ($N{=}5$).}
+  artifact, all 5 folds $\times$ 3 seeds; FP32/proxy means in Table~\ref{tab:kfold-compression}.
+  Worst case: INT8 fold~4/seed~123 ($56.98\%$, $-$35.13~pp); INT8+Prune50 fold~4/seed~42
+  ($65.87\%$, $-$25.47~pp). Fold~4 is worst under every seed for both configs (63.5\%/67.6\% mean
+  vs.\ 82--87\% for folds 0--3), implicating the held-out cohort over calibration randomness.}
 \end{table}
