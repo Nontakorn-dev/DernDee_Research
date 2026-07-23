@@ -29,12 +29,11 @@ microcontrollers remains challenging. This study investigates the impact of deep
 techniques---post-training INT8 quantization and structured channel pruning---on the
 phase-specific accuracy of a Standard Temporal Convolutional Network (TCN) for real-time gait
 phase classification on the ESP32-C3 microcontroller. Using shank-mounted IMU data from the NONAN
-GaitPrint dataset, we evaluate all models under subject-wise stratified 5-fold
-cross-validation ($K{=}5$, three seeds: 42, 123, 456), quantify phase-specific accuracy
-degradation (LR, LS, PSw, Sw) under INT8 quantization and structured pruning applied to TCN, and
-map the efficiency--accuracy trade-off via a Pareto front of macro F1-score versus on-device model
-size. Test evaluation uses stride-1 windows; we report per-subject blocked macro F1 alongside
-window-level metrics.
+GaitPrint dataset, we evaluate all models under subject-wise stratified 5-fold cross-validation
+($K{=}5$, three seeds), quantify phase-specific accuracy degradation (LR, LS, PSw, Sw) under INT8
+quantization and structured pruning applied to TCN, and map the efficiency--accuracy trade-off via
+a Pareto front of macro F1-score versus on-device model size (stride-1 test evaluation; per-subject
+blocked macro F1 reported alongside window-level metrics).
 Under the primary $K{=}5\times3$ baseline protocol, TCN achieved the highest mean
 macro F1 among compared architectures ($90.87\%\pm1.47\%$), significantly outperforming CNN1D
 ($+0.53$~pp, Wilcoxon $p{=}0.004$) while remaining statistically equivalent to Transformer
@@ -87,13 +86,12 @@ information loss from aggressive quantization and pruning than steady-state phas
 
 This study addresses this gap by:
 \begin{enumerate}
-  \item Selecting and training a Standard TCN backbone for gait phase classification using shank IMU
-        data from the NONAN GaitPrint dataset, with matched-capacity FP32 baselines for context;
-  \item Systematically applying INT8 post-training quantization, as well as structured
-        channel pruning, and quantifying their impact on phase-specific accuracy and
-        F1-score, rather than overall accuracy alone;
-  \item Deploying the compressed models on ESP32-C3 hardware and measuring on-device inference
-        latency and SRAM headroom.
+  \item Selecting and training a Standard TCN backbone for gait phase classification using shank
+        IMU data from NONAN GaitPrint, with matched-capacity FP32 baselines for context;
+  \item Systematically applying INT8 quantization and structured pruning, quantifying their impact
+        on phase-specific accuracy and F1-score rather than overall accuracy alone;
+  \item Deploying the compressed models on ESP32-C3 hardware and measuring on-device latency and
+        SRAM headroom.
 \end{enumerate}
 
 \section{Literature Review}
@@ -422,11 +420,13 @@ payload) costs 1.47~pp ($89.40\%\pm1.43\%$, $p{<}0.001$). Prune75 (${\sim}26.4$~
 payload) costs 0.70~pp ($90.17\%\pm1.30\%$, $p{<}0.001$). All pruned configs remain significantly
 below FP32 at $\alpha{=}0.05$, but the effect size shrinks as more channels are retained.
 
-Fig.~\ref{fig:pareto} shows the \emph{estimated-payload} Pareto front built from QDQ-proxy
-accuracy (Table~\ref{tab:esp32} has measured TFLite sizes); any quantized config should be
-re-validated on its deployed artifact before trusting this frontier. Among compression that does
-\emph{not} quantize, Prune75 is the most reliable near-lossless point (${\sim}26.4$~KB,
-$-$0.70~pp); INT8 variants are smaller but need per-checkpoint validation given the variance above.
+Fig.~\ref{fig:pareto} shows the \emph{estimated-payload} Pareto front built from QDQ-proxy accuracy
+(Table~\ref{tab:esp32} has measured sizes); quantized configs need re-validation on the deployed
+artifact. Among configs with no quantization gap, Prune75 has the best accuracy
+(${\sim}26.4$~KB, $-$0.70~pp) but measured on-device latency (510.8~ms) exceeds the 500~ms
+budget---accuracy alone does not predict deployability. Prune50 is the most defensible
+\emph{real-time} choice with no proxy gap ($-$1.47~pp, confirmed 253~ms). INT8 variants are
+smaller/faster still but need per-checkpoint validation given the accuracy variance above.
 
 \subsection{Fine-Tuning Schedule Ablation}
 
@@ -444,13 +444,12 @@ information loss beyond what longer fine-tuning can recover.
 
 \subsection{Compression Trade-offs and Phase Degradation}
 
-Figs.~\ref{fig:pareto} and~\ref{fig:phase-degradation} qualitatively illustrate the
-accuracy--size trade-off and phase-specific degradation patterns on a single fold$\times$seed pair
-(fold~0, seed~42) under the QDQ proxy. These figures are consistent with the k-fold aggregates in
-Tables~\ref{tab:kfold-compression} and~\ref{tab:finetune-ablation} \emph{as proxy accuracy}: INT8
-appears near-lossless and structured pruning disproportionately affects transition phases (LR,
-PSw)---but Table~\ref{tab:int8-real} shows the real deployed INT8 artifact is not near-lossless at
-all, so this Pareto view should be read as an upper bound on quantized-config accuracy.
+Figs.~\ref{fig:pareto} and~\ref{fig:phase-degradation} qualitatively illustrate the accuracy--size
+trade-off and phase-specific degradation on a single fold$\times$seed pair (fold~0, seed~42) under
+the QDQ proxy, consistent with the k-fold aggregates in Tables~\ref{tab:kfold-compression}
+and~\ref{tab:finetune-ablation} \emph{as proxy accuracy}---but Table~\ref{tab:int8-real} shows the
+real deployed INT8 artifact is not near-lossless, so this Pareto view is an upper bound on
+quantized-config accuracy.
 
 \begin{figure}[!t]
   \centering
@@ -477,18 +476,18 @@ all, so this Pareto view should be read as an upper bound on quantized-config ac
 \subsection{On-Device Performance on ESP32-C3}
 \label{sec:esp32-results}
 
-Table~\ref{tab:esp32} reports on-device latency for four TFLite exports derived from the fold~0,
+Table~\ref{tab:esp32} reports on-device latency for five TFLite exports derived from the fold~0,
 seed~42 compression checkpoints. Benchmarks replay one fixed normalized $(50,12)$ window in a tight
 loop ($N{=}1000$ trials after 20 warmup invocations) without live IMU or BLE I/O.
 
 The 500~ms budget assumes one inference per non-overlapping window (hop\,=\,window), \emph{not}
-the stride-1 (10~ms hop) offline evaluation protocol (Section~\ref{sec:method}); a stride-1
-deployment would need sub-10~ms inference, which no config achieves. Three of the four
-configurations meet this budget: INT8+Prune50 ($75.7$~ms, ${\sim}425$~ms headroom), Prune50
-($253$~ms), and full-width INT8 ($279.8$~ms); only FP32 exceeds it ($856$~ms). INT8+Prune50 is
-fastest by a wide margin (3.7$\times$ faster than full-width INT8)
-despite similar or larger TFLite sizes for the other two. FP32 additionally requires a 160~KB
-tensor arena, reducing minimum free heap to 116~KB vs.\ 156~KB for the 120~KB-arena configs.
+the stride-1 (10~ms hop) offline protocol (Section~\ref{sec:method}), which would need sub-10~ms
+inference (no config achieves this). Three of five configs meet the 500~ms budget: INT8+Prune50
+($75.7$~ms), Prune50 ($253$~ms), and full-width INT8 ($279.8$~ms); FP32 ($856$~ms) and, notably,
+\textbf{Prune75 ($510.8$~ms) both exceed it} despite Prune75 fitting the 120~KB arena---accuracy
+alone does not predict real-time feasibility (Section~\ref{sec:discussion}). INT8+Prune50 is
+fastest by a wide margin (3.7$\times$ faster than full-width INT8). FP32 additionally requires a
+160~KB arena, reducing minimum free heap to 116~KB vs.\ 156~KB for the 120~KB-arena configs.
 
 \input{tables/esp32_placeholder}
 
@@ -522,18 +521,15 @@ dilated receptive field and narrow hidden width tolerate 8-bit \emph{weight} pre
 real deployed model additionally quantizes \emph{activations}, compounding across the four stacked
 dilated blocks; this alone would predict a roughly uniform gap, but it instead concentrates in
 fold~4 under every seed (Table~\ref{tab:int8-real}), suggesting specific subjects' activations fall
-outside the calibration set's well-covered range. Pruning removes capacity by a different, uniform
+outside the calibration set's covered range. Pruning removes capacity by a different, uniform
 mechanism (Prune50 0.53~pp below FP32 even at 50-epoch fine-tuning), but PSw suffers under both.
 
-\textbf{Efficiency-accuracy trade-off:} the k-fold Pareto analysis (Table~\ref{tab:kfold-compression},
-Fig.~\ref{fig:pareto}) is built from QDQ-proxy accuracy, which overstates deployed INT8 accuracy by
-$11$--$13$~pp on average (up to 35~pp worst case); among configs with \emph{no} such gap, Prune75
-(${\sim}26.4$~KB, real PyTorch $-$0.70~pp) is the most defensible near-lossless choice. INT8 and
-INT8+Prune50 are smaller but need per-checkpoint validation given their real cost
-($11.15\pm9.51$~pp and $13.10\pm6.59$~pp). Latency/memory still favor INT8+Prune50:
-Table~\ref{tab:esp32} shows it fastest on ESP32-C3 (13.4~KB, 75.7~ms, 156~KB min.\ heap),
-3.7$\times$ faster than full-width INT8; FP32 is not real-time here. Quantized configs' size/latency
-edge is real---only their accuracy claim needs artifact-level validation.
+\textbf{Efficiency-accuracy trade-off:} the QDQ proxy overstates deployed INT8 accuracy by
+$11$--$13$~pp on average (up to 35~pp worst case), and higher accuracy does not imply faster
+inference: Prune75 has the best no-quantization accuracy ($-$0.70~pp) yet misses the 500~ms budget
+(510.8~ms), while Prune50 ($-$1.47~pp, 253~ms) and INT8+Prune50 (75.7~ms) stay well within it.
+Both the proxy's accuracy optimism and a pruned config's latency require on-device confirmation
+before recommending a deployment target from PyTorch-side numbers alone.
 
 \subsection{Limitations}
 
@@ -543,10 +539,10 @@ edge is real---only their accuracy claim needs artifact-level validation.
   \item Test stride~1 yields highly overlapping windows; per-subject blocked aggregation mitigates
         inflated sample size, but Wilcoxon tests use fold$\times$seed aggregates ($N{=}15$), not
         fully independent (three seeds share five folds), bounding the smallest signed-rank $p$ at
-        $6.10\times10^{-5}$. Holm--Bonferroni correction within each table changes no conclusion.
-  \item Prune25/75+INT8 combinations were not part of the compression grid and so were not
-        evaluated for a real-TFLite gap. Power (mW) was not measured; latency used TFLite Micro
-        reference kernels (Chirale\_TensorFlowLite).
+        $6.10\times10^{-5}$; Holm--Bonferroni correction within each table changes no conclusion.
+  \item Prune25/75+INT8 combinations were not part of the compression grid, so no real-TFLite gap
+        was measured for them. Power (mW) was not measured; latency used TFLite Micro reference
+        kernels (Chirale\_TensorFlowLite).
 \end{itemize}
 
 \section{Conclusion}
@@ -560,13 +556,15 @@ to FP32 ($p{=}0.30$) under a PyTorch weight-only QDQ proxy; however, the \emph{a
 full-integer TFLite model, evaluated on the complete test set across the same $N{=}15$ protocol,
 showed a far larger loss (mean $11.15\pm9.51$~pp, $p{=}6.1\times10^{-5}$), concentrated in one fold
 under every seed tested (worst case $-$35.13~pp)---implicating the held-out subject cohort, not
-calibration randomness, and showing accuracy claims for quantized models must be validated on the
-exact deployed artifact. Structured pruning, unaffected by this proxy gap, incurs significant but
+calibration randomness. Structured pruning, unaffected by this proxy gap, incurs significant but
 severity-dependent losses (Prune50 at 5 fine-tune epochs: $-$1.47~pp; Prune75: $-$0.70~pp, both
 $p{<}0.001$), partly recoverable with longer fine-tuning. PSw and LR F1 were the most
-compression-sensitive transition phases under both pruning and real quantization. INT8+Prune50 is
-fastest to deploy (75.7~ms, 13.4~KB) but its real accuracy cost ($13.10\pm6.59$~pp) far exceeds its
-proxy estimate (1.54~pp). Future work will validate live IMU streaming and additional cohorts.
+compression-sensitive transition phases under both pruning and real quantization. Despite its
+accuracy advantage, Prune75 measured 510.8~ms on-device, missing the 500~ms budget that Prune50
+(253~ms) meets comfortably---accuracy alone does not predict deployability. INT8+Prune50 is
+fastest to deploy (75.7~ms, 13.4~KB) but its real accuracy cost
+($13.10\pm6.59$~pp) far exceeds its proxy estimate (1.54~pp). Future work will validate live IMU
+streaming and other cohorts.
 
 % Acknowledgment omitted for double-anonymous review.
 

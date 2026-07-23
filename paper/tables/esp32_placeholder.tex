@@ -1,4 +1,4 @@
-% Measured 2026-07-12 on ESP32-C3 (fold0, seed42; synthetic replay window).
+% Measured 2026-07-12 on ESP32-C3 (fold0, seed42; synthetic replay window); Prune75 added 2026-07-23.
 \begin{table}[!t]
   \centering
   \caption{On-Device Inference on ESP32-C3 (StandardTCN, fold~0, seed~42)}
@@ -11,15 +11,16 @@
     \textbf{Config} & \textbf{Mean (ms)} & \textbf{p95 (ms)} & \textbf{TFLite (KB)} & \textbf{Heap (KB)} \\
     \midrule
     FP32            & 856.2 & 856.2 & 52.1 & 116.3 \\
+    Prune75         & 510.8 & 510.8 & 34.5 & 156.3 \\
     INT8            & 279.8 & 279.8 & 21.3 & 156.3 \\
     Prune50         & 253.0 & 253.0 & 21.6 & 156.3 \\
     INT8+Prune50    &  75.7 &  75.7 & 13.4 & 156.3 \\
     \bottomrule
   \end{tabular*}
 
-  \vspace{0.4em}
+  \vspace{0.2em}
   {\scriptsize
-  ESP32-C3 @ 160~MHz; TensorFlow Lite Micro (Chirale\_TensorFlowLite). Latency per 0.5~s window
-  ($N{=}1000$ trials, 20 warmup). Heap = minimum free dynamic heap; arena 120~KB (INT8, Prune50,
-  INT8+Prune50) or 160~KB (FP32); weights reside in flash, excluded from heap.}
+  ESP32-C3 @ 160~MHz; TFLite Micro. Latency/0.5~s window ($N{=}1000$, 20 warmup). Heap = min.\
+  free dynamic heap; arena 120~KB (all but FP32) or 160~KB (FP32); weights in flash. Prune75
+  exceeds the 500~ms budget despite fitting the 120~KB arena.}
 \end{table}

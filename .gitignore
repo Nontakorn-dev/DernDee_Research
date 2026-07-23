@@ -17,6 +17,10 @@ experiments/esp32/exports/
 experiments/esp32/exports_cnn1d/
 experiments/esp32/arduino/**/model_data*.h
 
+# CNN1D ESP32 exploration (not used in the paper).
+experiments/esp32/arduino/cnn1d_benchmark/
+experiments/esp32/benchmarks/*cnn1d*.json
+
 # Generated analysis artifacts that can be regenerated.
 experiments/compression/results/
 experiments/compression/phase_degradation.json
