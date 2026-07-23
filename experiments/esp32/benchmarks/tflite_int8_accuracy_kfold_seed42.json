@@ -1,0 +1,72 @@
+{
+  "summary": "Real full-integer TFLite INT8 accuracy vs PyTorch FP32/QDQ-proxy, TCN, 5 folds x seed 42, stride-1 full test set (N=full per-fold test windows, same protocol as compression pipeline).",
+  "method": "ai_edge_litert TFLite interpreter running the actual exported INT8 model (experiments/esp32/scripts/export_tflite.py, full-integer PTQ, default 100 calibration windows, calib-seed=42) over every stride-1 test window for that fold (not a subsample). No ESP32-C3 hardware involved -- this measures accuracy only, not latency (see esp32_c3_metrics.json for on-device latency).",
+  "per_fold": {
+    "0": {
+      "fp32": 0.910748296527595,
+      "int8_qdq": 0.9109577986090602,
+      "int8_tflite": 0.8747752679727602,
+      "phase_f1_tflite": {
+        "LR": 0.778385393054674,
+        "LS": 0.9678213929219976,
+        "PSw": 0.7894803356586796,
+        "Sw": 0.9634139502556894
+      }
+    },
+    "1": {
+      "fp32": 0.8772,
+      "int8_qdq": 0.8769,
+      "int8_tflite": 0.8394,
+      "phase_f1_tflite": {
+        "LR": 0.7454,
+        "LS": 0.9484,
+        "PSw": 0.7281,
+        "Sw": 0.9358
+      }
+    },
+    "2": {
+      "fp32": 0.9091,
+      "int8_qdq": 0.9094,
+      "int8_tflite": 0.8412,
+      "phase_f1_tflite": {
+        "LR": 0.7104,
+        "LS": 0.9556,
+        "PSw": 0.7475,
+        "Sw": 0.9515
+      }
+    },
+    "3": {
+      "fp32": 0.9183147654680746,
+      "int8_qdq": 0.9182122153322033,
+      "int8_tflite": 0.8461,
+      "phase_f1_tflite": {
+        "LR": 0.6781,
+        "LS": 0.9453,
+        "PSw": 0.8174,
+        "Sw": 0.9436
+      }
+    },
+    "4": {
+      "fp32": 0.9133945221507432,
+      "int8_qdq": 0.91298163206576,
+      "int8_tflite": 0.7044,
+      "phase_f1_tflite": {
+        "LR": 0.4587,
+        "LS": 0.8794,
+        "PSw": 0.6211,
+        "Sw": 0.8585
+      },
+      "int8_tflite_alt_calib_seed123_n400": 0.7528
+    }
+  },
+  "macro_f1_gap_real_tflite_minus_fp32_pp": {
+    "0": -3.6,
+    "1": -3.78,
+    "2": -6.79,
+    "3": -7.22,
+    "4": -20.9
+  },
+  "mean_gap_pp": -8.46,
+  "std_gap_pp": 7.15,
+  "note_fold4_calibration_sensitivity": "fold4 (default calib: 100 windows, seed=42) collapsed to 70.44% macro F1 (-20.90pp vs FP32). Re-exporting with calib-seed=123 and 400 windows improved it to 75.28% (-16.06pp) -- still a severe outlier relative to folds 0-3, indicating both (a) calibration-set quality materially affects full-integer PTQ accuracy, and (b) at least one checkpoint (fold4) is intrinsically more quantization-sensitive regardless of calibration, unlike the uniform near-zero degradation the PyTorch QDQ (weight-only) proxy predicts."
+}

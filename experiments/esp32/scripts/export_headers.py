@@ -25,7 +25,7 @@ from eval_checkpoint import load_checkpoint, norm_from_checkpoint  # noqa: E402
 from gait_labels import IMU_INPUT_COLUMNS, PHASE_NAMES  # noqa: E402
 from paths import DATA_XY, SHARED_SPLITS, TCN_RUNS  # noqa: E402
 
-EXPORT_CONFIGS = ("FP32", "INT8", "Prune50", "INT8+Prune50")
+EXPORT_CONFIGS = ("FP32", "INT8", "Prune50", "INT8+Prune50", "Prune75")
 
 
 def _fmt_float_array(values: list[float] | np.ndarray, *, per_line: int = 4) -> str:

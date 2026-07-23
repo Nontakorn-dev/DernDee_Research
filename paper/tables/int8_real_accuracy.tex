@@ -1,0 +1,23 @@
+% Hand-authored from experiments/esp32/benchmarks/tflite_int8_accuracy_kfold_seed42.json
+\begin{table}[!t]
+  \centering
+  \caption{Real Deployed TFLite INT8 vs.\ PyTorch (Macro F1 \%, TCN, Seed 42)}
+  \label{tab:int8-real}
+  \scriptsize
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.08}
+  \begin{tabular}{@{} l c c c c c @{}}
+    \toprule
+    \textbf{Fold} & \textbf{0} & \textbf{1} & \textbf{2} & \textbf{3} & \textbf{4} \\
+    \midrule
+    FP32 & 91.07 & 87.72 & 90.91 & 91.83 & 91.34 \\
+    INT8 QDQ proxy & 91.10 & 87.69 & 90.94 & 91.82 & 91.30 \\
+    INT8 real TFLite & 87.48 & 83.94 & 84.12 & 84.61 & 70.44 \\
+    Gap (pp) & $-$3.59 & $-$3.77 & $-$6.78 & $-$7.22 & $-$20.90 \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{0.3em}
+  {\scriptsize Real TFLite: full test set (stride-1) via interpreter on the exact exported
+  artifact. Gap $=$ real TFLite $-$ FP32; mean $-8.46\pm7.15$~pp ($N{=}5$).}
+\end{table}

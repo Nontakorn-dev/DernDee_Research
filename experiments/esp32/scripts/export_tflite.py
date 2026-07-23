@@ -34,7 +34,7 @@ from eval_checkpoint import load_checkpoint, model_from_checkpoint, norm_from_ch
 from gait_labels import IMU_INPUT_COLUMNS  # noqa: E402
 from paths import DATA_XY, SHARED_SPLITS  # noqa: E402
 
-EXPORT_CONFIGS = ("FP32", "INT8", "Prune50", "INT8+Prune50")
+EXPORT_CONFIGS = ("FP32", "INT8", "Prune50", "INT8+Prune50", "Prune75")
 
 # Which checkpoint supplies float weights, and whether to apply TFLite INT8 PTQ.
 EXPORT_PLAN: dict[str, tuple[str, str]] = {
@@ -42,6 +42,7 @@ EXPORT_PLAN: dict[str, tuple[str, str]] = {
     "INT8": ("FP32", "int8"),
     "Prune50": ("Prune50", "float"),
     "INT8+Prune50": ("Prune50", "int8"),
+    "Prune75": ("Prune75", "float"),
 }
 
 
@@ -216,9 +217,19 @@ def export_config(
     split_file: Path,
     rep_windows: int,
     seed_calib: int,
+    checkpoint_override: Path | None = None,
 ) -> dict[str, Any]:
-    source_ckpt_path = checkpoint_for_config(config, model=model, fold=fold, seed=seed)
-    _, quantize = EXPORT_PLAN[config]
+    if checkpoint_override is not None:
+        if config not in ("FP32", "INT8"):
+            raise ValueError(
+                f"--checkpoint override only supports FP32/INT8 (no pruned source "
+                f"checkpoint exists for a baseline-only model); got config={config!r}."
+            )
+        source_ckpt_path = checkpoint_override
+        quantize = "int8" if config == "INT8" else "float"
+    else:
+        source_ckpt_path = checkpoint_for_config(config, model=model, fold=fold, seed=seed)
+        _, quantize = EXPORT_PLAN[config]
 
     ckpt = load_checkpoint(source_ckpt_path)
     model = load_export_model(ckpt, source_ckpt_path)
@@ -295,6 +306,15 @@ def main() -> None:
     p.add_argument("--split-file", type=Path, default=None, help="Default: shared/splits/folds/fold{N}.csv")
     p.add_argument("--rep-windows", type=int, default=100, help="Calibration windows for INT8 PTQ.")
     p.add_argument("--calib-seed", type=int, default=42, help="RNG seed for INT8 calibration windows.")
+    p.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=None,
+        help=(
+            "Override source checkpoint (e.g., a baseline-only model with no compression "
+            "grid). Only FP32/INT8 configs are supported in this mode."
+        ),
+    )
     args = p.parse_args()
 
     split_file = args.split_file
@@ -321,6 +341,7 @@ def main() -> None:
             split_file=split_file,
             rep_windows=args.rep_windows,
             seed_calib=args.calib_seed,
+            checkpoint_override=args.checkpoint,
         )
 
     summary_path = args.out_dir / "export_summary.json"

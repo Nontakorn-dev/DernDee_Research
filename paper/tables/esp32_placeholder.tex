@@ -17,11 +17,9 @@
     \bottomrule
   \end{tabular*}
 
-  \vspace{0.65em}
+  \vspace{0.4em}
   {\scriptsize
-  ESP32-C3 @ 160~MHz; TensorFlow Lite Micro (Chirale\_TensorFlowLite).
-  Latency per 0.5~s window ($N{=}1000$ trials, 20 warmup).
-  TFLite file size from export; heap = minimum free dynamic heap during the run.
-  Tensor arena: 120~KB (INT8, Prune50, INT8+Prune50) or 160~KB (FP32).
-  Model weights reside in flash and are excluded from heap.}
+  ESP32-C3 @ 160~MHz; TensorFlow Lite Micro (Chirale\_TensorFlowLite). Latency per 0.5~s window
+  ($N{=}1000$ trials, 20 warmup). Heap = minimum free dynamic heap; arena 120~KB (INT8, Prune50,
+  INT8+Prune50) or 160~KB (FP32); weights reside in flash, excluded from heap.}
 \end{table}

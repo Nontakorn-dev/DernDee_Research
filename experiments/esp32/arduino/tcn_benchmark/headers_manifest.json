@@ -1,12 +1,13 @@
 {
-  "active_config": "FP32",
-  "tensor_arena_kb": 160,
-  "headers_dir": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/esp32/arduino/tcn_benchmark",
+  "active_config": "Prune75",
+  "tensor_arena_kb": 120,
+  "headers_dir": "experiments/esp32/arduino/tcn_benchmark",
   "model_headers": {
-    "FP32": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/esp32/arduino/tcn_benchmark/model_data_fp32.h",
-    "INT8": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/esp32/arduino/tcn_benchmark/model_data_int8.h",
-    "Prune50": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/esp32/arduino/tcn_benchmark/model_data_prune50.h",
-    "INT8+Prune50": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/esp32/arduino/tcn_benchmark/model_data_int8_plusprune50.h"
+    "FP32": "experiments/esp32/arduino/tcn_benchmark/model_data_fp32.h",
+    "INT8": "experiments/esp32/arduino/tcn_benchmark/model_data_int8.h",
+    "Prune50": "experiments/esp32/arduino/tcn_benchmark/model_data_prune50.h",
+    "INT8+Prune50": "experiments/esp32/arduino/tcn_benchmark/model_data_int8_plusprune50.h",
+    "Prune75": "experiments/esp32/arduino/tcn_benchmark/model_data_prune75.h"
   },
   "replay_window": {
     "window_index": 0,

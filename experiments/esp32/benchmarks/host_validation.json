@@ -107,6 +107,32 @@
       "atol": 1.0,
       "within_tol": true,
       "pass": true
+    },
+    {
+      "config": "Prune75",
+      "source_checkpoint": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/tcn/fold0_seed42/Prune75/model.pt",
+      "tflite_path": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/esp32/exports/Prune75/model.tflite",
+      "label": 1,
+      "label_name": "LS",
+      "pytorch_logits": [
+        -5.977333,
+        -0.09616436,
+        2.0412788,
+        -7.5280585
+      ],
+      "tflite_logits": [
+        -5.9773316,
+        -0.09616377,
+        2.0412788,
+        -7.528057
+      ],
+      "pytorch_pred": 2,
+      "tflite_pred": 2,
+      "pred_match": true,
+      "max_abs_logit_diff": 1.4305115e-06,
+      "atol": 0.05,
+      "within_tol": true,
+      "pass": true
     }
   ],
   "all_pass": true

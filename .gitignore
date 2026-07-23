@@ -14,6 +14,7 @@ dataset/Xy
 experiments/**/runs/**/*.pt
 experiments/compression/runs/
 experiments/esp32/exports/
+experiments/esp32/exports_cnn1d/
 experiments/esp32/arduino/**/model_data*.h
 
 # Generated analysis artifacts that can be regenerated.

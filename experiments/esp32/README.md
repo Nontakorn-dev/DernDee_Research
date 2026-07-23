@@ -5,7 +5,7 @@ The sketch replays one fixed `(50, 12)` window, normalizes with training stats, 
 runs TFLite Micro inference in a tight loop.
 
 Primary configs: `INT8`, `INT8+Prune50`  
-Comparison (if SRAM allows): `FP32`, `Prune50`
+Comparison (if SRAM allows): `FP32`, `Prune50`, `Prune75`
 
 ## Pipeline
 
@@ -155,15 +155,82 @@ INT8 may differ slightly from PyTorch FP32 logits; smoke test passes on **matchi
 - If FP32 float models exhaust SRAM on ESP32-C3, report that only INT8 variants fit within the 120 KB tensor arena used here.
 - Practical inference budget on ESP32-C3: INT8+Prune50 $\approx$ 69 ms/window (see `esp32_c3_metrics.json`).
 
+## Prune75 on-device benchmark (closes a recommendation gap)
+
+The paper recommends Prune75 (${\sim}26.4$~KB estimated payload, 90.17%$\pm$1.30% real PyTorch
+macro F1, no quantization $\Rightarrow$ no proxy-deployment gap) as the most defensible
+near-lossless config. It had never been flashed to ESP32-C3, so its on-device latency/SRAM
+feasibility was unverified — unlike Prune50, which has both accuracy *and* measured latency.
+Export + headers are **already generated** (fold~0, seed~42): `experiments/esp32/exports/Prune75/model.tflite`
+(34.54 KB, real measured file size) and `experiments/esp32/arduino/tcn_benchmark/model_data_prune75.h`.
+`benchmark_config.h`'s active config is **already set to `Prune75`** at a 120 KB arena. Host
+validation passed (PyTorch vs.\ TFLite argmax match, max logit diff ${\approx}1.4\times10^{-6}$;
+see `host_validation.json`).
+
+To flash: open `experiments/esp32/arduino/tcn_benchmark/tcn_benchmark.ino` as usual (same sketch,
+same resolver — Prune75's op set is identical: `TRANSPOSE/RESHAPE/PAD/CONV_2D/ADD/MEAN/FULLY_CONNECTED`).
+If `AllocateTensors()` fails at 120 KB, regenerate headers with a larger arena:
+
+```bash
+.venv-export/bin/python experiments/esp32/scripts/export_headers.py \
+  --model tcn --fold 0 --seed 42 --configs FP32 INT8 Prune50 INT8+Prune50 Prune75 \
+  --exports-dir experiments/esp32/exports \
+  --arduino-dir experiments/esp32/arduino/tcn_benchmark \
+  --active-config Prune75 --tensor-arena-kb 160
+```
+
+Copy results into the `Prune75` entry of `esp32_c3_metrics.json` (already has a placeholder with
+known `tflite_kb`; fill in `latency_*`/`*_heap_bytes`/`pred`).
+
+## CNN1D head-to-head benchmark (optional)
+
+Answers "why TCN over the smaller CNN1D baseline?" with a real on-device number instead of
+just the FP32 accuracy tie in Table I. CNN1D has no pruning grid (only trained as an FP32
+baseline), so only `FP32`/`INT8` are exported — no `Prune50`/`INT8+Prune50` equivalents.
+
+Exports and headers are **already generated** (fold~0, seed~42, matching the TCN checkpoint used
+throughout this repo) under `experiments/esp32/exports_cnn1d/` and
+`experiments/esp32/arduino/cnn1d_benchmark/`. Host-side PyTorch-vs-TFLite argmax validation passed
+for both configs (`experiments/esp32/benchmarks/host_validation_cnn1d.json`; max abs logit diff
+0.0 for FP32, 0.166 for INT8 on the fixed replay window). To regenerate after retraining CNN1D:
+
+```bash
+.venv-export/bin/python experiments/esp32/scripts/export_tflite.py \
+  --model cnn1d --fold 0 --seed 42 --configs FP32 INT8 \
+  --checkpoint experiments/cnn1d/runs/fold0_seed42_fp32_100hz/best_model.pt \
+  --out-dir experiments/esp32/exports_cnn1d
+.venv-export/bin/python experiments/esp32/scripts/export_headers.py \
+  --model cnn1d --fold 0 --seed 42 --configs FP32 INT8 \
+  --checkpoint experiments/cnn1d/runs/fold0_seed42_fp32_100hz/best_model.pt \
+  --norm-stats experiments/cnn1d/runs/fold0_seed42_fp32_100hz/norm_stats.json \
+  --exports-dir experiments/esp32/exports_cnn1d \
+  --arduino-dir experiments/esp32/arduino/cnn1d_benchmark \
+  --active-config INT8 --tensor-arena-kb 120
+```
+
+To flash: open `experiments/esp32/arduino/cnn1d_benchmark/cnn1d_benchmark.ino` (same Arduino IDE
+setup as the TCN sketch above) and follow "Flash and capture". Start `INT8` at a 120 KB arena
+(same as TCN's INT8); for `FP32` (44.04 KB TFLite, larger than TCN's 45.2 KB PyTorch-side weights)
+try 120 KB first and step up to 160/200 KB if `AllocateTensors()` fails, following the same
+80→120→160→200 KB progression suggested above. Copy results into
+`experiments/esp32/benchmarks/esp32_c3_metrics_cnn1d.json` (same schema as `esp32_c3_metrics.json`).
+
+CNN1D's exported TFLite graph uses only `TRANSPOSE`/`RESHAPE`/`CONV_2D`/`MEAN`/`FULLY_CONNECTED`
+(verified via `tf.lite.experimental.Analyzer`) — a strict subset of the 7-op resolver already
+registered in the TCN sketch, so `cnn1d_benchmark.ino` reuses that resolver unchanged (`Pad`/`Add`
+are registered but never invoked).
+
 ## Related paths
 
 | Path | Purpose |
 |------|---------|
-| `experiments/esp32/scripts/export_tflite.py` | PyTorch → ONNX → TFLite |
+| `experiments/esp32/scripts/export_tflite.py` | PyTorch → ONNX → TFLite (`--checkpoint` overrides for baseline-only models) |
 | `experiments/esp32/scripts/export_headers.py` | C headers for firmware |
 | `experiments/esp32/scripts/validate_tflite.py` | Host smoke test |
-| `experiments/esp32/arduino/tinytcn_benchmark/tinytcn_benchmark/` | Benchmark sketch |
-| `experiments/esp32/benchmarks/esp32_c3_metrics.json` | Hardware results template |
+| `experiments/esp32/arduino/tcn_benchmark/` | TCN benchmark sketch |
+| `experiments/esp32/arduino/cnn1d_benchmark/` | CNN1D head-to-head benchmark sketch |
+| `experiments/esp32/benchmarks/esp32_c3_metrics.json` | TCN hardware results |
+| `experiments/esp32/benchmarks/esp32_c3_metrics_cnn1d.json` | CNN1D hardware results template |
 | `experiments/compression/manifest.json` | Accuracy / size source of truth |
 
 ## Acquisition firmware (real IMU, optional)

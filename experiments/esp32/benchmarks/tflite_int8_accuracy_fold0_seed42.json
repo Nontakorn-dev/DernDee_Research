@@ -1,0 +1,56 @@
+{
+  "model": "tcn",
+  "config": "INT8",
+  "fold": 0,
+  "seed": 42,
+  "artifact": "experiments/esp32/exports/INT8/model.tflite",
+  "method": "TFLite full-integer PTQ interpreter (ai_edge_litert), stride-1 test windows",
+  "n_windows": 3016857,
+  "accuracy": 0.9433924113738238,
+  "macro_f1": 0.8747752679727602,
+  "phase_f1": {
+    "LR": 0.778385393054674,
+    "LS": 0.9678213929219976,
+    "PSw": 0.7894803356586796,
+    "Sw": 0.9634139502556894
+  },
+  "phase_accuracy": {
+    "LR": 0.7695371807297765,
+    "LS": 0.9726882395923033,
+    "PSw": 0.9386475781780591,
+    "Sw": 0.9329578934315121
+  },
+  "phase_support": {
+    "LR": 178493,
+    "LS": 1502686,
+    "PSw": 166383,
+    "Sw": 1169295
+  },
+  "confusion_matrix": [
+    [
+      137357,
+      39916,
+      14,
+      1206
+    ],
+    [
+      8956,
+      1461645,
+      30593,
+      1492
+    ],
+    [
+      3,
+      8440,
+      156175,
+      1765
+    ],
+    [
+      28119,
+      7798,
+      42475,
+      1090903
+    ]
+  ],
+  "report": "              precision    recall  f1-score   support\n\n          LR       0.79      0.77      0.78    178493\n          LS       0.96      0.97      0.97   1502686\n         PSw       0.68      0.94      0.79    166383\n          Sw       1.00      0.93      0.96   1169295\n\n    accuracy                           0.94   3016857\n   macro avg       0.86      0.90      0.87   3016857\nweighted avg       0.95      0.94      0.95   3016857\n"
+}
