@@ -51,7 +51,7 @@ def eval_tflite(tflite_path: Path, ckpt_path: Path, split_file: Path) -> dict:
         for i in range(xb_np.shape[0]):
             x = window_ntc_to_nchw(xb_np[i])
             if is_int8:
-                xq = np.round(x / in_scale + in_zp).astype(np.int8)
+                xq = np.clip(np.round(x / in_scale + in_zp), -128, 127).astype(np.int8)
                 interp.set_tensor(inp["index"], xq)
             else:
                 interp.set_tensor(inp["index"], x.astype(np.float32))

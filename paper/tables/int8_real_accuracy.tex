@@ -1,4 +1,7 @@
 % Hand-authored from analysis/tflite_real_accuracy_summary.json (N=15: 5 folds x 3 seeds)
+% Corrected 2026-07-24: earlier draft had an int8 cast overflow bug (no saturation) in the
+% host-side evaluation harness, not present in the ESP32-C3 firmware; numbers below use a
+% saturating cast matching the deployed firmware's quantization behavior.
 \begin{table}[!t]
   \centering
   \caption{Real Deployed TFLite vs.\ PyTorch Accuracy (Macro F1 \%, TCN, $N{=}15$)}
@@ -10,15 +13,16 @@
     \toprule
     \textbf{Config} & \textbf{Real TFLite} & \textbf{$\Delta$ vs.\ FP32} & \textbf{$\Delta$ vs.\ proxy} & \textbf{Wilcoxon $p$} \\
     \midrule
-    INT8 & 79.72\,$\pm$\,9.08 & $-$11.15\,$\pm$\,9.51 & $-$11.16 & 6.10e-05 \\
-    INT8+Prune50 & 77.78\,$\pm$\,6.73 & $-$13.10\,$\pm$\,6.59 & $-$11.56 & 6.10e-05 \\
+    INT8 & 90.15\,$\pm$\,1.35 & $-$0.72\,$\pm$\,0.60 & $-$0.73\,$\pm$\,0.61 & 1.83e-04 \\
+    INT8+Prune50 & 87.32\,$\pm$\,2.32 & $-$3.56\,$\pm$\,2.10 & $-$2.02\,$\pm$\,1.80 & 6.10e-05 \\
     \bottomrule
   \end{tabular}
 
   \vspace{0.3em}
   {\scriptsize Real TFLite: full test set (stride-1) via interpreter on the exact exported
-  artifact, all 5 folds $\times$ 3 seeds; FP32/proxy means in Table~\ref{tab:kfold-compression}.
-  Worst case: INT8 fold~4/seed~123 ($56.98\%$, $-$35.13~pp); INT8+Prune50 fold~4/seed~42
-  ($65.87\%$, $-$25.47~pp). Fold~4 is worst under every seed for both configs (63.5\%/67.6\% mean
-  vs.\ 82--87\% for folds 0--3), implicating the held-out cohort over calibration randomness.}
+  artifact (saturating int8 cast, matching firmware), all 5 folds $\times$ 3 seeds; FP32/proxy
+  means in Table~\ref{tab:kfold-compression}. $\Delta$ is the mean of per-fold$\times$seed paired
+  differences, not aggregate means subtracted (individual FP32 scores vary by fold). Worst case:
+  INT8 fold~4/seed~456 ($89.41\%$, $-$1.98~pp); INT8+Prune50 fold~4/seed~123 ($84.04\%$,
+  $-$8.07~pp). INT8+Prune50's gap is roughly 2$\times$ plain INT8's.}
 \end{table}

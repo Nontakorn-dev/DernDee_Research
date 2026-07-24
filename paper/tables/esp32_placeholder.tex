@@ -1,7 +1,7 @@
 % Measured 2026-07-12 on ESP32-C3 (fold0, seed42; synthetic replay window); Prune75 added 2026-07-23.
 \begin{table}[!t]
   \centering
-  \caption{On-Device Inference on ESP32-C3 (StandardTCN, fold~0, seed~42)}
+  \caption{On-Device Inference on ESP32-C3 (Standard TCN, fold~0, seed~42)}
   \label{tab:esp32}
   \footnotesize
   \setlength{\tabcolsep}{4pt}
@@ -21,6 +21,6 @@
   \vspace{0.2em}
   {\scriptsize
   ESP32-C3 @ 160~MHz; TFLite Micro. Latency/0.5~s window ($N{=}1000$, 20 warmup). Heap = min.\
-  free dynamic heap; arena 120~KB (all but FP32) or 160~KB (FP32); weights in flash. Prune75
-  exceeds the 500~ms budget despite fitting the 120~KB arena.}
+  free dynamic heap; arena 120~KB (all but FP32) or 160~KB (FP32); weights in flash. Only
+  INT8+Prune50 meets the clinically motivated 100~ms real-time budget (Section~\ref{sec:esp32-results}).}
 \end{table}

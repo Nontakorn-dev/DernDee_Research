@@ -40,7 +40,7 @@ def run_tflite(tflite_path: Path, normalized_window: np.ndarray) -> np.ndarray:
     x = window_ntc_to_nchw(normalized_window)
     if input_details["dtype"] == np.int8:
         scale, zero_point = input_details["quantization"]
-        x = np.round(x / scale + zero_point).astype(np.int8)
+        x = np.clip(np.round(x / scale + zero_point), -128, 127).astype(np.int8)
     else:
         x = x.astype(np.float32)
 
