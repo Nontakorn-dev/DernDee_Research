@@ -22,7 +22,7 @@ sys.path.insert(0, str(RESEARCH_ROOT / "experiments" / "esp32" / "scripts"))
 import numpy as np  # noqa: E402
 from eval_checkpoint import load_checkpoint, norm_from_checkpoint, make_eval_loader_from_config  # noqa: E402
 from evaluate import classification_metrics  # noqa: E402
-from export_tflite import export_config, window_ntc_to_nchw  # noqa: E402
+from export_tflite import EXPORT_PLAN, export_config, window_ntc_to_nchw  # noqa: E402
 from paths import DATA_XY  # noqa: E402
 
 
@@ -66,30 +66,43 @@ def eval_tflite(tflite_path: Path, ckpt_path: Path, split_file: Path) -> dict:
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--config", required=True, choices=["INT8", "INT8+Prune50"])
+    p.add_argument(
+        "--config",
+        required=True,
+        choices=["FP32", "INT8", "INT8+Prune25", "INT8+Prune50", "INT8+Prune75"],
+    )
     p.add_argument("--folds", nargs="+", type=int, required=True)
     p.add_argument("--seeds", nargs="+", type=int, required=True)
     p.add_argument("--out-dir", type=Path, default=RESEARCH_ROOT / "analysis" / "tflite_real_accuracy_results")
     p.add_argument("--scratch-dir", type=Path, default=Path("/tmp/tflite_real_acc_export"))
+    p.add_argument("--rep-windows", type=int, default=100, help="Calibration windows for INT8 PTQ.")
+    p.add_argument("--seed-calib", type=int, default=42, help="RNG seed for calibration window sampling.")
+    p.add_argument(
+        "--tag",
+        default=None,
+        help="Optional suffix appended to output filenames (e.g. for a calibration-size sweep).",
+    )
     args = p.parse_args()
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
+    suffix = f"_{args.tag}" if args.tag else ""
 
     for seed in args.seeds:
         for fold in args.folds:
-            out_path = args.out_dir / f"{args.config.replace('+', '_plus_')}_fold{fold}_seed{seed}.json"
+            out_path = args.out_dir / f"{args.config.replace('+', '_plus_')}_fold{fold}_seed{seed}{suffix}.json"
             if out_path.exists():
                 print(f"skip (cached): {out_path.name}")
                 continue
 
             t0 = time.time()
             split_file = RESEARCH_ROOT / "shared" / "splits" / "folds" / f"fold{fold}.csv"
+            source_config, _ = EXPORT_PLAN[args.config]
             ckpt_path = (
                 RESEARCH_ROOT / "experiments" / "compression" / "runs" / "tcn"
-                / f"fold{fold}_seed{seed}" / args.config / "model.pt"
+                / f"fold{fold}_seed{seed}" / source_config / "model.pt"
             )
 
-            export_dir = args.scratch_dir / f"{args.config.replace('+', '_plus_')}_{fold}_{seed}"
+            export_dir = args.scratch_dir / f"{args.config.replace('+', '_plus_')}_{fold}_{seed}{suffix}"
             if export_dir.exists():
                 shutil.rmtree(export_dir)
 
@@ -101,8 +114,8 @@ def main() -> None:
                 out_dir=export_dir,
                 data_root=DATA_XY,
                 split_file=split_file,
-                rep_windows=100,
-                seed_calib=42,
+                rep_windows=args.rep_windows,
+                seed_calib=args.seed_calib,
             )
             tflite_path = Path(meta["tflite_path"])
 
@@ -113,6 +126,8 @@ def main() -> None:
                 "config": args.config,
                 "fold": fold,
                 "seed": seed,
+                "rep_windows": args.rep_windows,
+                "seed_calib": args.seed_calib,
                 "tflite_kb": meta["tflite_kb"],
                 "elapsed_s": round(elapsed, 1),
                 **{k: v for k, v in metrics.items() if k != "report"},

@@ -16,6 +16,8 @@ experiments/compression/runs/
 experiments/esp32/exports/
 experiments/esp32/exports_cnn1d/
 experiments/esp32/arduino/**/model_data*.h
+experiments/esp32/arduino/tcn_multiwindow/multiwindow_data.h
+experiments/esp32/arduino/tcn_multiwindow/multiwindow_reference.npz
 
 # CNN1D ESP32 exploration (not used in the paper).
 experiments/esp32/arduino/cnn1d_benchmark/

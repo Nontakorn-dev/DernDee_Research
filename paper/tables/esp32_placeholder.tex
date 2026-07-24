@@ -20,7 +20,9 @@
 
   \vspace{0.2em}
   {\scriptsize
-  ESP32-C3 @ 160~MHz; TFLite Micro. Latency/0.5~s window ($N{=}1000$, 20 warmup). Heap = min.\
-  free dynamic heap; arena 120~KB (all but FP32) or 160~KB (FP32); weights in flash. Only
+  ESP32-C3 @ 160~MHz; TFLite Micro. Latency/0.5~s window ($N{=}1000$, 20 warmup). Mean and p95
+  round to the same value because latency is essentially deterministic on this bare-metal,
+  single-core target: max$-$min jitter across all 1000 trials is $<0.08$~ms for every config. Heap
+  = min.\ free dynamic heap; arena 120~KB (all but FP32) or 160~KB (FP32); weights in flash. Only
   INT8+Prune50 meets the clinically motivated 100~ms real-time budget (Section~\ref{sec:esp32-results}).}
 \end{table}

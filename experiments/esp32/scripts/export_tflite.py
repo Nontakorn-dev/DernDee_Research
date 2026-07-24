@@ -34,15 +34,18 @@ from eval_checkpoint import load_checkpoint, model_from_checkpoint, norm_from_ch
 from gait_labels import IMU_INPUT_COLUMNS  # noqa: E402
 from paths import DATA_XY, SHARED_SPLITS  # noqa: E402
 
-EXPORT_CONFIGS = ("FP32", "INT8", "Prune50", "INT8+Prune50", "Prune75")
+EXPORT_CONFIGS = ("FP32", "INT8", "Prune25", "Prune50", "Prune75", "INT8+Prune25", "INT8+Prune50", "INT8+Prune75")
 
 # Which checkpoint supplies float weights, and whether to apply TFLite INT8 PTQ.
 EXPORT_PLAN: dict[str, tuple[str, str]] = {
     "FP32": ("FP32", "float"),
     "INT8": ("FP32", "int8"),
+    "Prune25": ("Prune25", "float"),
     "Prune50": ("Prune50", "float"),
-    "INT8+Prune50": ("Prune50", "int8"),
     "Prune75": ("Prune75", "float"),
+    "INT8+Prune25": ("Prune25", "int8"),
+    "INT8+Prune50": ("Prune50", "int8"),
+    "INT8+Prune75": ("Prune75", "int8"),
 }
 
 

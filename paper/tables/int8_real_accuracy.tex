@@ -1,7 +1,9 @@
-% Hand-authored from analysis/tflite_real_accuracy_summary.json (N=15: 5 folds x 3 seeds)
+% Hand-authored from analysis/dose_response_summary.json (N=15: 5 folds x 3 seeds)
 % Corrected 2026-07-24: earlier draft had an int8 cast overflow bug (no saturation) in the
 % host-side evaluation harness, not present in the ESP32-C3 firmware; numbers below use a
 % saturating cast matching the deployed firmware's quantization behavior.
+% Extended 2026-07-25: added FP32 control row and the full INT8+Prune{25,50,75} dose-response
+% grid (previously only INT8+Prune50 was measured).
 \begin{table}[!t]
   \centering
   \caption{Real Deployed TFLite vs.\ PyTorch Accuracy (Macro F1 \%, TCN, $N{=}15$)}
@@ -13,16 +15,22 @@
     \toprule
     \textbf{Config} & \textbf{Real TFLite} & \textbf{$\Delta$ vs.\ FP32} & \textbf{$\Delta$ vs.\ proxy} & \textbf{Wilcoxon $p$} \\
     \midrule
+    FP32 (control) & 90.87\,$\pm$\,1.52 & $-$0.00\,$\pm$\,0.00 & n/a & 0.225 \\
     INT8 & 90.15\,$\pm$\,1.35 & $-$0.72\,$\pm$\,0.60 & $-$0.73\,$\pm$\,0.61 & 1.83e-04 \\
+    INT8+Prune75 & 89.00\,$\pm$\,1.50 & $-$1.87\,$\pm$\,1.24 & $-$1.18\,$\pm$\,1.06 & 1.22e-04 \\
     INT8+Prune50 & 87.32\,$\pm$\,2.32 & $-$3.56\,$\pm$\,2.10 & $-$2.02\,$\pm$\,1.80 & 6.10e-05 \\
+    INT8+Prune25 & 82.82\,$\pm$\,4.92 & $-$8.05\,$\pm$\,5.03 & $-$4.82\,$\pm$\,4.89 & 6.10e-05 \\
     \bottomrule
   \end{tabular}
 
   \vspace{0.3em}
-  {\scriptsize Real TFLite: full test set (stride-1) via interpreter on the exact exported
-  artifact (saturating int8 cast, matching firmware), all 5 folds $\times$ 3 seeds; FP32/proxy
-  means in Table~\ref{tab:kfold-compression}. $\Delta$ is the mean of per-fold$\times$seed paired
-  differences, not aggregate means subtracted (individual FP32 scores vary by fold). Worst case:
-  INT8 fold~4/seed~456 ($89.41\%$, $-$1.98~pp); INT8+Prune50 fold~4/seed~123 ($84.04\%$,
-  $-$8.07~pp). INT8+Prune50's gap is roughly 2$\times$ plain INT8's.}
+  {\scriptsize Real TFLite: full test set (stride-1), exact exported artifact, 5 folds $\times$ 3
+  seeds. FP32/INT8/INT8+Prune50 proxy from Table~\ref{tab:kfold-compression} (INT8+Prune50's proxy
+  independently re-derives pruning/fine-tuning, Section~\ref{sec:limitations}); INT8+Prune25/75
+  proxy applies QDQ to the existing checkpoint directly (no re-finetune). FP32 (control): same
+  pipeline, no quantization---real vs.\ PyTorch agree to $<0.0001$~pp. $\Delta$ is the mean of
+  paired per-fold$\times$seed differences; rows ordered by pruning severity (Prune75 mildest,
+  Prune25 most aggressive)---both $\Delta$ columns grow monotonically. Worst case: INT8+Prune25
+  fold~2/seed~456 ($67.43\%$, $-$24.04~pp, PSw F1$\,{=}\,0.29$ from LS$\to$PSw confusion at hidden
+  width 8), driving this config's $\pm4.92$~pp std; other pairs stay 78--88\%.}
 \end{table}

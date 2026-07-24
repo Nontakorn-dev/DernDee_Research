@@ -1,0 +1,57 @@
+{
+  "config": "INT8+Prune75",
+  "source_config": "Prune75",
+  "fold": 0,
+  "seed": 42,
+  "accuracy": 0.9579018826546966,
+  "macro_f1": 0.9079848085881141,
+  "phase_f1": {
+    "LR": 0.8629174468929426,
+    "LS": 0.9787235625461387,
+    "PSw": 0.8186033963186187,
+    "Sw": 0.9716948285947568
+  },
+  "phase_accuracy": {
+    "LR": 0.9746152510182472,
+    "LS": 0.9630102363367996,
+    "PSw": 0.9665230221837567,
+    "Sw": 0.9475589992260294
+  },
+  "phase_support": {
+    "LR": 178493,
+    "LS": 1502686,
+    "PSw": 166383,
+    "Sw": 1169295
+  },
+  "confusion_matrix": [
+    [
+      173962,
+      2142,
+      0,
+      2389
+    ],
+    [
+      31156,
+      1447102,
+      24408,
+      20
+    ],
+    [
+      4,
+      4744,
+      160813,
+      822
+    ],
+    [
+      19580,
+      447,
+      41292,
+      1107976
+    ]
+  ],
+  "loss": 0.11398011509649926,
+  "split": "test",
+  "windows": 3016857,
+  "checkpoint": "/Users/nontakornpulakkeaw/Documents/Nontakorn/Research/experiments/compression/runs/tcn/fold0_seed42/Prune75/model.pt",
+  "model_name": "tcn"
+}
